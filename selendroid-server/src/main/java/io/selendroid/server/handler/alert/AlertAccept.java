@@ -13,22 +13,24 @@
  */
 package io.selendroid.server.handler.alert;
 
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-import io.selendroid.server.SelendroidResponse;
 import org.json.JSONException;
-import org.webbitserver.HttpRequest;
 
-public class AlertAccept extends RequestHandler {
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.StatusCode;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.handler.SafeRequestHandler;
+
+public class AlertAccept extends SafeRequestHandler {
 
   public AlertAccept(String mappedUri) {
     super(mappedUri);
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException {
+  public Response safeHandle(HttpRequest request) throws JSONException {
     if (!getSelendroidDriver(request).isAlertPresent()) {
-      return new SelendroidResponse(getSessionId(request), 27, "no alert open");
+      return new SelendroidResponse(getSessionId(request), StatusCode.NO_ALERT_OPEN_ERROR, "no alert open");
     }
     getSelendroidDriver(request).acceptAlert();
     return new SelendroidResponse(getSessionId(request), null);

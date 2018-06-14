@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,30 +13,28 @@
  */
 package io.selendroid.server.handler;
 
-import io.selendroid.exceptions.NoSuchElementException;
-import io.selendroid.exceptions.UnsupportedOperationException;
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-import io.selendroid.server.SelendroidResponse;
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.http.HttpRequest;
 import io.selendroid.server.model.AndroidElement;
 import io.selendroid.server.model.By;
 import io.selendroid.server.model.internal.NativeAndroidBySelector;
-import io.selendroid.util.SelendroidLogger;
+import io.selendroid.server.util.SelendroidLogger;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webbitserver.HttpRequest;
 
 import java.util.List;
 
-public class FindElements extends RequestHandler {
+public class FindElements extends SafeRequestHandler {
 
   public FindElements(String mappedUri) {
     super(mappedUri);
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException {
+  public Response safeHandle(HttpRequest request) throws JSONException {
     JSONObject payload = getPayload(request);
     String method = payload.getString("using");
     String selector = payload.getString("value");
@@ -44,14 +42,8 @@ public class FindElements extends RequestHandler {
         selector));
 
     By by = new NativeAndroidBySelector().pickFrom(method, selector);
-    List<AndroidElement> elements = null;
-    try {
-      elements = getSelendroidDriver(request).findElements(by);
-    } catch (NoSuchElementException e) {
-      return new SelendroidResponse(getSessionId(request), new JSONArray());
-    } catch (UnsupportedOperationException e) {
-      return new SelendroidResponse(getSessionId(request), 32, e);
-    }
+    List<AndroidElement> elements = getSelendroidDriver(request).findElements(by);
+
     JSONArray result = new JSONArray();
     for (AndroidElement element : elements) {
       JSONObject jsonElement = new JSONObject();

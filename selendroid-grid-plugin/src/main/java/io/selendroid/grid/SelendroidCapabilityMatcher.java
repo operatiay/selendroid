@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,17 +13,19 @@
  */
 package io.selendroid.grid;
 
+import org.openqa.grid.internal.utils.CapabilityMatcher;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.openqa.grid.internal.utils.CapabilityMatcher;
 
 public class SelendroidCapabilityMatcher implements CapabilityMatcher {
   public static final String AUT = "aut";
   public static final String PLATFORM_NAME = "platformName";
   public static final String SCREEN_SIZE = "screenSize";
   public static final String BROWSER_NAME = "browserName";
+  public static final String PLATFORM_VERSION = "platformVersion";
+  public static final String EMULATOR = "emulator";
   private final List<String> toConsider = new ArrayList<String>();
 
   public SelendroidCapabilityMatcher() {
@@ -31,6 +33,8 @@ public class SelendroidCapabilityMatcher implements CapabilityMatcher {
     toConsider.add(AUT);
     toConsider.add(PLATFORM_NAME);
     toConsider.add(SCREEN_SIZE);
+    toConsider.add(PLATFORM_VERSION);
+    toConsider.add(EMULATOR);
   }
 
   @Override
@@ -42,13 +46,11 @@ public class SelendroidCapabilityMatcher implements CapabilityMatcher {
       if (toConsider.contains(key)) {
         if (requestedCapability.get(key) != null) {
           String value = requestedCapability.get(key).toString();
-          if (value != null) {
-            if (!value.equals(nodeCapability.get(key))) {
-              return false;
-            }
-          } else {
-            // null value matches anything.
+          if (!value.equals(nodeCapability.get(key))) {
+            return false;
           }
+        } else {
+          // null value matches anything.
         }
       }
     }

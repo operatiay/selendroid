@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -15,10 +15,10 @@ package io.selendroid.server;
 
 
 
+import io.netty.handler.codec.http.HttpMethod;
 import io.selendroid.server.internal.SelendroidAssert;
 
 import org.apache.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,13 +41,13 @@ public class GetStatusTest extends BaseTest {
   public void assertThatGetStatusHandlerIsNotRegisteredForPost() throws Exception {
     String url = "http://"+host+":" + server.getPort() + "/wd/hub/status";
     HttpResponse response = executeRequest(url, HttpMethod.POST);
-    SelendroidAssert.assertResponseIsServerError(response);
+    SelendroidAssert.assertResponseIsResourceNotFound(response);
   }
 
   @Test
   public void assertThatGetStatusHandlerIsNotRegisteredForDelete() throws Exception {
     String url = "http://"+host+":" + server.getPort() + "/wd/hub/status";
     HttpResponse response = executeRequest(url, HttpMethod.DELETE);
-    SelendroidAssert.assertResponseIsServerError(response);
+    SelendroidAssert.assertResponseIsResourceNotFound(response);
   }
 }

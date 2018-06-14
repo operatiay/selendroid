@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,12 +13,7 @@
  */
 package io.selendroid.webviewdrivertests;
 
-import static io.selendroid.waiter.TestWaiter.waitFor;
-import static io.selendroid.waiter.WaitingConditions.pageTitleToBe;
 import io.selendroid.support.BaseAndroidTest;
-
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -26,6 +21,13 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.remote.DesiredCapabilities;
+
+import java.util.concurrent.TimeUnit;
+
+import static io.selendroid.client.waiter.TestWaiter.waitFor;
+import static io.selendroid.client.waiter.WaitingConditions.pageTitleToBe;
 
 public class WebElementInteractionTest extends BaseAndroidTest {
   @Test
@@ -42,6 +44,14 @@ public class WebElementInteractionTest extends BaseAndroidTest {
     Assert.assertEquals(ckeckbox.isSelected(), true);
     ckeckbox.click();
     Assert.assertEquals(ckeckbox.isSelected(), false);
+  }
+
+  @Test
+  public void canClickOnLinkThatChangesUrlWithWebViewThatListensToShouldOverrideUrlLoading() {
+    openWebdriverTestPage(HtmlTestData.TEST_CLICK_PAGE_1);
+    driver().findElement(By.tagName("a")).click();
+    driver().context(NATIVE_APP);
+    Assert.assertEquals("file:///android_asset/web/test_click_page2.html", driver().findElement(By.id("webviewLocation")).getText());
   }
 
   @Test
@@ -69,8 +79,7 @@ public class WebElementInteractionTest extends BaseAndroidTest {
 
   @Test
   public void shouldSendKeysAndClearAnElement() {
-    openWebdriverTestPage(HtmlTestData.FORM_PAGE);
-    waitFor(pageTitleToBe(driver(), "We Leave From Here"), 10, TimeUnit.SECONDS);
+    givenWebViewWithFormPageLoaded();
 
     WebElement inputField = driver().findElement(By.id("email"));
     String text = "a.anyString@not.existent%.1.de";
@@ -81,9 +90,27 @@ public class WebElementInteractionTest extends BaseAndroidTest {
   }
 
   @Test
+  public void shouldTriggerInputEventWhenSendTextWithNativeKeyboard() throws Exception {
+    // ensure native keyboard is used
+    // according to io.selendroid.server.handler.SendKeysToElement.safeHandle()
+    Assert.assertTrue("Should use native keyboard", !hasNativeEventsDisabled());
+
+    givenWebViewWithFormPageLoaded();
+    whenSendingKeysToInputElement();
+    thenInputEventShouldBeTriggeredOnInputElement();
+  }
+
+  @Test
+  public void shouldTriggerInputEventWhenSendTextWithoutNativeKeyboard() throws Exception {
+    givenWebDriverWithNativeEventsDisabled();
+    givenWebViewWithFormPageLoaded();
+    whenSendingKeysToInputElement();
+    thenInputEventShouldBeTriggeredOnInputElement();
+  }
+
+  @Test
   public void shouldGetSelectedStateOfElement() {
-    openWebdriverTestPage(HtmlTestData.FORM_PAGE);
-    waitFor(pageTitleToBe(driver(), "We Leave From Here"), 10, TimeUnit.SECONDS);
+    givenWebViewWithFormPageLoaded();
 
     WebElement element = driver().findElement(By.id("checky"));
     Assert.assertEquals(element.isSelected(), false);
@@ -97,8 +124,7 @@ public class WebElementInteractionTest extends BaseAndroidTest {
    */
   @Test
   public void shouldGetSizeOfElement() {
-    openWebdriverTestPage(HtmlTestData.FORM_PAGE);
-    waitFor(pageTitleToBe(driver(), "We Leave From Here"), 10, TimeUnit.SECONDS);
+    givenWebViewWithFormPageLoaded();
 
     WebElement element = driver().findElement(By.id("checky"));
     Dimension size = element.getSize();
@@ -112,8 +138,7 @@ public class WebElementInteractionTest extends BaseAndroidTest {
    */
   @Test
   public void shouldGetLocationOfElement() {
-    openWebdriverTestPage(HtmlTestData.FORM_PAGE);
-    waitFor(pageTitleToBe(driver(), "We Leave From Here"), 10, TimeUnit.SECONDS);
+    givenWebViewWithFormPageLoaded();
 
     WebElement element = driver().findElement(By.id("checky"));
     Point location = element.getLocation();
@@ -123,17 +148,15 @@ public class WebElementInteractionTest extends BaseAndroidTest {
 
   @Test
   public void shouldExecuteSimpleJavaScript() {
-    openWebdriverTestPage(HtmlTestData.FORM_PAGE);
-    waitFor(pageTitleToBe(driver(), "We Leave From Here"), 10, TimeUnit.SECONDS);
+    givenWebViewWithFormPageLoaded();
 
-    String name = (String) ((JavascriptExecutor) driver()).executeScript("return document.title");
+    String name = (String) executeJavaScript("return document.title");
     Assert.assertEquals(name, "We Leave From Here");
   }
 
   @Test
   public void shouldGetDisplayedStateOfElement() {
-    openWebdriverTestPage(HtmlTestData.FORM_PAGE);
-    waitFor(pageTitleToBe(driver(), "We Leave From Here"), 10, TimeUnit.SECONDS);
+    givenWebViewWithFormPageLoaded();
 
     WebElement element = driver().findElement(By.id("checky"));
     Assert.assertEquals(element.isDisplayed(), true);
@@ -141,8 +164,7 @@ public class WebElementInteractionTest extends BaseAndroidTest {
 
   @Test
   public void shouldGetEnbledStateOfElement() {
-    openWebdriverTestPage(HtmlTestData.FORM_PAGE);
-    waitFor(pageTitleToBe(driver(), "We Leave From Here"), 10, TimeUnit.SECONDS);
+    givenWebViewWithFormPageLoaded();
 
     WebElement element = driver().findElement(By.id("checky"));
     Assert.assertEquals(element.isEnabled(), true);
@@ -158,7 +180,49 @@ public class WebElementInteractionTest extends BaseAndroidTest {
     inputField.sendKeys("Selendroid");
 
     inputField.submit();
-    String name = (String) ((JavascriptExecutor) driver()).executeScript("return document.title");
+    String name = (String) executeJavaScript("return document.title");
     Assert.assertEquals(name, "Hello: Selendroid");
+  }
+
+  private void givenWebDriverWithNativeEventsDisabled() throws Exception {
+    closeDriver();
+
+    final DesiredCapabilities caps = getDefaultCapabilities();
+    caps.setCapability(CapabilityType.HAS_NATIVE_EVENTS, false);
+
+    createDriver(caps);
+
+    // ensure native keyboard is NOT used
+    // according to io.selendroid.server.handler.SendKeysToElement.safeHandle()
+    Assert.assertTrue("Should NOT use native keyboard", hasNativeEventsDisabled());
+  }
+
+  protected void givenWebViewWithFormPageLoaded() {
+    openWebdriverTestPage(HtmlTestData.FORM_PAGE);
+    waitFor(pageTitleToBe(driver(), "We Leave From Here"), 10, TimeUnit.SECONDS);
+  }
+
+  protected Object executeJavaScript(String script) {
+    return ((JavascriptExecutor) driver()).executeScript(script);
+  }
+
+  private boolean hasNativeEventsDisabled() {
+    final Object capability = driver().getCapabilities().getCapability(CapabilityType.HAS_NATIVE_EVENTS);
+    return Boolean.FALSE.equals(capability);
+  }
+
+  private void whenSendingKeysToInputElement() {
+    executeJavaScript("window._input_event_triggered = false;   " +
+            "document.getElementById('email').addEventListener( " +
+            "  'input', function(event){                        " +
+            "    window._input_event_triggered = true;          " +
+            "  }                                                " +
+            ");                                                 ");
+    driver().findElement(By.id("email")).sendKeys("test");
+  }
+
+  private void thenInputEventShouldBeTriggeredOnInputElement() {
+    final Boolean isInputEventTriggered = (Boolean) executeJavaScript("return window._input_event_triggered;");
+    Assert.assertTrue("Input event must be triggered on sendKeys", isInputEventTriggered);
   }
 }

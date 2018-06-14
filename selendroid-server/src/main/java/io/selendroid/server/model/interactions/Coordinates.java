@@ -16,7 +16,7 @@ limitations under the License.
 */
 package io.selendroid.server.model.interactions;
 
-import io.selendroid.android.internal.Point;
+import io.selendroid.server.android.internal.Point;
 
 /**
  * Provides coordinates of an element for advanced interactions. Note that some coordinates (such as

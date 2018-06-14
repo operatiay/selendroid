@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,38 +13,24 @@
  */
 package io.selendroid.server;
 
+import io.netty.handler.codec.http.HttpMethod;
+import io.selendroid.server.common.http.HttpServer;
 import io.selendroid.server.internal.SelendroidAssert;
-
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.concurrent.Executors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.json.JSONObject;
-import org.junit.Assert;
 import org.junit.Test;
-import org.webbitserver.WebServer;
-import org.webbitserver.WebServers;
-import org.webbitserver.helpers.NamingThreadFactory;
+
+import static org.junit.Assert.*;
 
 public class HandlerRegisteredTest extends BaseTest {
-  private WebServer server = null;
+  private HttpServer server = null;
 
   @Override
   public void setup() throws Exception {
-    //server = WebServers.createWebServer(port);
-    URI remoteUri =
-        URI.create("http://127.0.0.1"
-            + (port == 80 ? "" : (":" + port)) + "/");
-
-    NamingThreadFactory namingThreadFactory =
-            new NamingThreadFactory(Executors.defaultThreadFactory(), "selendroid-test-handler");
-    server =
-        WebServers.createWebServer(Executors.newSingleThreadExecutor(namingThreadFactory),
-            new InetSocketAddress(port), remoteUri);
-    server.add(new AndroidTestServlet());
+    server = new HttpServer(port);
+    server.addHandler(new AndroidTestServlet());
     server.start();
   }
 
@@ -57,9 +43,11 @@ public class HandlerRegisteredTest extends BaseTest {
     String url = "http://" + host + ":" + port + "/wd/hub/session/1234567890/element";
     HttpResponse response = executeRequestWithPayload(url, HttpMethod.GET, payload.toString());
     SelendroidAssert.assertResponseIsOk(response);
-    Assert.assertEquals(
-        "{\"status\":0,\"value\":\"sessionId#1234567890 using#id value#my_button_bar\"}",
-        IOUtils.toString(response.getEntity().getContent()));
+
+    JSONObject responseJSON = parseJsonResponse(response);
+    assertEquals("0", responseJSON.getString("status"));
+    assertEquals("sessionId#1234567890 using#id value#my_button_bar",
+            responseJSON.getString("value"));
   }
 
   @Test
@@ -67,15 +55,16 @@ public class HandlerRegisteredTest extends BaseTest {
     String url = "http://" + host + ":" + port + "/wd/hub/session/12345/element/815/click";
     HttpResponse response = executeRequest(url, HttpMethod.POST);
     SelendroidAssert.assertResponseIsOk(response);
-    Assert.assertEquals("{\"status\":0,\"value\":\"sessionId#12345 elementId#815\"}",
-        IOUtils.toString(response.getEntity().getContent()));
+    JSONObject responseJSON = parseJsonResponse(response);
+    assertEquals("0", responseJSON.getString("status"));
+    assertEquals("sessionId#12345 elementId#815", responseJSON.getString("value"));
   }
 
   @Test
   public void postStatusHandlerNotRegistered() throws Exception {
     String url = "http://" + host + ":" + port + "/wd/hub/session/1234567890/element";
     HttpResponse response = executeRequest(url, HttpMethod.POST);
-    SelendroidAssert.assertResponseIsServerError(response);
+    SelendroidAssert.assertResponseIsResourceNotFound(response);
   }
 
   @Override

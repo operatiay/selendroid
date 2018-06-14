@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,24 +13,24 @@
  */
 package io.selendroid.server.handler;
 
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-import io.selendroid.server.SelendroidResponse;
-import io.selendroid.util.SelendroidLogger;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.webbitserver.HttpRequest;
-
 import java.util.Set;
 
-public class GetContexts extends RequestHandler {
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.util.SelendroidLogger;
+
+public class GetContexts extends SafeRequestHandler {
 
   public GetContexts(String mappedUri) {
     super(mappedUri);
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException {
+  public Response safeHandle(HttpRequest request) throws JSONException {
     SelendroidLogger.info("get contexts/windowHandles command");
 
     Set<String> windowHandles = getSelendroidDriver(request).getContexts();

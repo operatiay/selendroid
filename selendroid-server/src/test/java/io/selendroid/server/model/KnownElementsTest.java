@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,9 +16,10 @@ package io.selendroid.server.model;
 
 import android.view.View;
 import android.webkit.WebView;
-import io.selendroid.ServerInstrumentation;
-import io.selendroid.android.InstrumentedKeySender;
-import io.selendroid.android.KeySender;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.android.InstrumentedKeySender;
+import io.selendroid.server.android.KeySender;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -136,8 +137,8 @@ public class KnownElementsTest {
     when(view.getId()).thenReturn(id);
 
     ServerInstrumentation instrumentation = mock(ServerInstrumentation.class);
-    KeySender keys = new InstrumentedKeySender(instrumentation);
-    return new AndroidNativeElement(view, instrumentation, keys, ke);
+    KeySender keys = new InstrumentedKeySender(instrumentation.getInstrumentation());
+    return Factories.getAndroidNativeElementFactory().createAndroidNativeElement(view, instrumentation, keys, ke);
   }
 
   private AndroidElement createWebElement(String id, KnownElements ke) {

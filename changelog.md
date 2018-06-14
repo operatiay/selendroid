@@ -1,7 +1,141 @@
-0.11.-SNAPSHOT (under development)
+0.18.0-SNAPSHOT (under current development)
+---
+- uninstall before installing, since adb install -r doesn't appear to work correctly all the time [#994](../../issues/994)
+- Adding gradle build system for selendroid [#998](../../isues/998)
+- Adding support for virtual devices when using android sdk version  >= 25 [#1134](../../isues/1134)
+
+0.17.0
+---
+- wrapping webviews in a better way, to handle hybrid apps that override methods on the webview(s)
+- native element getAttribute now run on UI Thread, to access certain attributes on a WebView (like getScale)
+- marshmallow support [#987](../../issues/987)
+- add factory to allow custom drivers [#975](../../pull/975)
+- merge device config into node capability for grid auto re-register [#963](../../pull/963)
+- kill orphaned processes after test has finished [#961](../../pull/961)
+- update selenium maven dependency [#946](../../issues/946)
+
+0.16.0
+---
+- gets app version from pom.xml if class path doesn't start with jar [#835](../../issues/835)
+- Clear data before app launch [#844](../../issues/844) 
+- Drop explicit 'implements TakesScreenshot, JavascriptExecutor' declarations [#846](../../issues/746) 
+- Trigger DOM event of type 'INPUT' after changing value of INPUT element [#746](../../issues/746)
+- Grid auto re-register [#756](../../issues/756)
+- Added activities to test touch gestures in the selendroid-test app [#848](../../issues/848) 
+- implemented driver.manage().timeouts().PageLoadTimeout() [#849](../../issues/849)
+- Added cordova-android 4.0.0 support [#859](../../issues/859)
+- Append error details to page source [#850](../../issues/850) 
+- Delete temporary created by Selendroid Server [#862](../../issues/862) 
+- Refactored SafeHandle (Action chain) for future multitouch implementation. [#860](../../issues/860) 
+- Changed the implicit wait timeout from 5s to 0 as per webdriver spec [#895](../../pull/895)
+- Add WXGA720 skin for detection of screen resolution [#904](../../pull/904)
+- Optimize screenshots from standalone server [#904](../../pull/904)
+- Fix bug SelendroidServerBuilder when executing tests and using default keystore alias and passwords and androidKeyStore file exists [#904](../../pull/904)
+- Don't add "offline" hardware devices on startup [#900](../../pull/900)
+- [client] Fix SelendroidDriver#readCallLog() [#916](../../pull/916)
+- [server] Fix finding a collection of elements by class name for non existing classes [#918](../../pull/918)
+- [standalone] Fix `..session/log/types` endpoint [#927](../../pull/927)
+- [standalone] Fix HTTP response for unknown commands [#928](../../pull/928)
+- [server] Fix NPE in ViewHierarchyAnalyzer [#929](../../pull/929)
+- [server] Do not try to get the resource name if the view has no id [#930](../../pull/930)
+- [server] Do not search in multiple top level views [#931](../../pull/931)
+- Update AndroidAtoms [#925](../../issues/925)
+
+0.15.0
+---
+- Fix native view search with multiple top level views [#799](../../issues/799) 
+- Reverted the 'adb.terminate()' call (back into if condition). [#803](../../issues/803) 
+- Log click position [#801](../../issues/801)
+- fix registration of selendroid server into a selenium grid [#802](../../issues/802) 
+- fix NPE on native apps driver.switchTo().defaultContent() [#776](../../issues/776) 
+- Fixing maven issues by using latest maven-android-plugin. [#804](../../issues/804)  
+- Introduce Predicate and AndroidElement factories [#811](../../issues/811)  
+- Fixing setAirplaneMode(true) for Android API 21 [#816](../../issues/816)  
+- Using latest selenium release. [#818](../../issues/818) 
+- Add assets for inspector [#820](../../issues/820)
+- Added apiTargetType as an option to SelendroidCapabilities [#823](../../issues/823)
+
+0.14.0
+---
+- Don't log exception when waiting for the Selendroid server to start
+- fixed support for Cordova 3.6.x apps
+
+0.13.0
+---
+- In case of an shutting down selendroid-standalone (using an already started emulator) this fix is fixing the NPE. 
+- Read adb output. [#695](../../issues/695) 
+- Selendroid-standalone argument -emulatorOptions to handle multiple options for emulator [#697](../../issues/697)
+- Selendroid-standalone: Fix to ScreenSize detection of emulators, and a feature - configurable maxSession and maxInstances. [#703](../../issues/703) 
+- Corrections to JSON to register at Grid hub. [#713](../../issues/713)
+- Added folder monitoring capability and fixed emulator launching problem. [#712](../../issues/712)
+- Introduced package per component. E.g. client bindings are located in ```io.selendroid.client```  [#725](../../issues/725)
+- Correctly wait for Selendroid standalone server to come up 
+- Consider 'emulator' capability when matching
+- For each device, register as "android" for WebView tests and also selendroid if an aut is specified
+- Elements don't need to be enabled to be visible. 
+- Removed the adb command implementation, now done via automation
+- Automatically selects the latest version of the app to test if it is not specified by users.
+- terminate must be called on AndroidDebugBridge on shutdown. 
+- Removed Gson dependency from server and client
+- fixes #767 stop internal ExecutorService of TrafficCounter on shutdown
+- Only return stack traces for unknown errors
+- Adding "model" as a configurable parameter option.
+
+0.12.0
+---
+- Support to custom keystore, password, alias. [#536](../../issues/536)
+- Added freeing on selendroidPort on driver.quit() [#557](../../issues/557)
+- The activity class is not any longer immediately loaded. [#558](../../issues/558)
+- Fixes bug in findElementsByName() [#559](../../issues/559)
+- Optimize searching for elements in selendroid [#560](../../issues/560)
+- Allowed disabling of adb logcat device logging with flag [#561](../../issues/561)
+- Cleaned up repetitive error handling in selendroid-server [#562](../../issues/562)
+- Stop swallowing exception when waiting for instrumentation [#563](../../issues/563)
+- Allow selendroid-server start timeout to be passed on command line [#564](../../issues/564)
+- Added "-h" and" --help" options to selendroid-standalone-server.
+- Split up SelendroidLauncher main().
+- Added capability to load in extension handlers and a test bootstrap class
+- Assume AUT is already installed if LaunchActivity specified & no matching appsStore entry [#567](../../issues/567)
+- Propagate unhandled exceptions in AUT as AppCrashedException
+- Added server-side support for low-level actions API
+- Added client side implementation of the multi touch screen
+- Added empty()/copyOf()/withMerged() to SelendroidCapabilities
+- Added ability to run GC and set system properties.
+- GetElementAttribute returns null if attribute is not set. Fixes [#568](../../issues/568)
+- Removed manual looper as we can now get the device to dump crash logs to a file
+- Added SelendroidStandaloneDriverEventListener to allow hooking into events during Selendroid startup
+- Run bootstrap and launch main activity on the UI thread in ServerInstrumentation
+- Fixed cloning of existing session capabilities in GetCapabilities()
+- Added logging of selendroid traffic statistics
+- Prevent hardware devices from showing up multiple times in the DeviceStore
+- getWindowSize() now supports API levels < 13
+- Changed getScreenSize() to use Dimension instead of string,
+  added support for emulators with string skin names
+- Fixed loading of keystores with no password
+- Send connection: close header in responses. Fixes [#458](../../issues/458)
+- Removed 'SelendroidKeys.ANDROID_HOME' because emulating the home key using Instrumentation is not supported in Android. Use adb to emulate the home key in your tests.
+- Return capabilities immediately after session creation instead of redirecting
+- Lowered severity of logs in isSelendroidRunning(), made messages more informative.
+- Made E2E tests use SelendroidStandaloneServer
+- findElements() returns an empty list instead of throwing an exception.
+- Standardises URLs / makes them compliant with the WebDriver specification
+- Fixed crashlog detection on older devices
+- Improved cleanup of devices on failed server startup
+- Marked 'execute_native' scripts as deprecated. The native script `TwoPointerGestureAction` was removed, please use the new multi touch implementation.
+- Upgrading to latest Selenium 2.43.1
+- Upgrading to latest Android Atoms
+
+0.11.0
 ---
 - Upgrading to latest Selenium 2.42.2
 - Fixed http response encoding header
+- Support for 'activity-alias' manifest tag by adding a new optional capability -launchActivity
+- Adding new background / resume custom api endpoints, available in the client: 
+  SelendroidDriver.backgroundApp() and SelendroidDriver.resumeApp()
+- Avoid returning duplicate elements for findElementsBy 
+- Migrated http-server from webbit to netty
+- Adding new call log feature: SelendroidDriver.addCallLog / readCallLog
+- Fixes: [#487](../../issues/487)
 
 0.10.0
 ---

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,16 +13,15 @@
  */
 package io.selendroid.server.inspector.view;
 
-import io.selendroid.ServerInstrumentation;
-import io.selendroid.server.inspector.BaseInspectorViewRenderer;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.common.http.HttpResponse;
+import io.selendroid.server.common.inspector.BaseInspectorViewRenderer;
 import io.selendroid.server.inspector.InspectorServlet;
 import io.selendroid.server.inspector.SelendroidInspectorView;
 import io.selendroid.server.model.SelendroidDriver;
-import org.json.JSONException;
-import org.webbitserver.HttpRequest;
-import org.webbitserver.HttpResponse;
 
-import java.nio.charset.Charset;
+import org.json.JSONException;
 
 public class InspectorView extends SelendroidInspectorView {
   public InspectorView(ServerInstrumentation serverInstrumentation, SelendroidDriver driver) {
@@ -31,8 +30,8 @@ public class InspectorView extends SelendroidInspectorView {
 
   @Override
   public void render(HttpRequest request, HttpResponse response) throws JSONException {
-    response.header("Content-Type", "text/html").charset(Charset.forName("UTF-8")).status(200)
-        .content(new MyInspectorViewRenderer().buildHtml(request)).end();
+    response.setContentType("text/html").setStatus(200)
+        .setContent(new MyInspectorViewRenderer().buildHtml(request)).end();
   }
 
   public class MyInspectorViewRenderer extends BaseInspectorViewRenderer {

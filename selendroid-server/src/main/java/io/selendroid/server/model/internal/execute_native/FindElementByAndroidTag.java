@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,12 +14,15 @@
 package io.selendroid.server.model.internal.execute_native;
 
 import android.view.View;
-import io.selendroid.ServerInstrumentation;
-import io.selendroid.android.KeySender;
-import io.selendroid.android.ViewHierarchyAnalyzer;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.android.KeySender;
+import io.selendroid.server.android.ViewHierarchyAnalyzer;
 import io.selendroid.server.model.AndroidNativeElement;
 import io.selendroid.server.model.KnownElements;
-import io.selendroid.util.Preconditions;
+import io.selendroid.server.model.Factories;
+import io.selendroid.server.util.Preconditions;
+import io.selendroid.server.util.SelendroidLogger;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,9 +34,9 @@ import java.util.List;
 /**
  * This class contains the functionality to find an Android view with the tag name assigned to it
  * sample usage : WebElement element = (WebElement)webDriver.executeScript("findElementByAndroidTag", "view_test_tag");
- *
+ * @deprecated Please use new implemented extension mechanism
+ * @see <a href="https://github.com/selendroid/selendroid-extension">extension mechanism Docu</a>
  */
-
 public class FindElementByAndroidTag implements NativeExecuteScript {
 
   private ServerInstrumentation serverInstrumentation;
@@ -54,7 +57,7 @@ public class FindElementByAndroidTag implements NativeExecuteScript {
 
   @Override
   public Object executeScript(JSONArray args) {
-	  String tagName = null;
+	  String tagName;
 	  JSONObject result = new JSONObject();
 	  try {
 		  tagName = args.getString(0);
@@ -67,7 +70,7 @@ public class FindElementByAndroidTag implements NativeExecuteScript {
 			  }
 		  }
 	    } catch (JSONException e) {
-	      e.printStackTrace();
+        SelendroidLogger.error("Cannot execute script", e);
 	    }
 	  return result;
   }
@@ -83,7 +86,8 @@ private AndroidNativeElement newAndroidElement(View view) {
         return element;
       }
     }
-    AndroidNativeElement e = new AndroidNativeElement(view, serverInstrumentation, keys, knownElements);
+    AndroidNativeElement e = Factories.getAndroidNativeElementFactory()
+        .createAndroidNativeElement(view, serverInstrumentation, keys, knownElements);
     knownElements.add(e);
     return e;
   }

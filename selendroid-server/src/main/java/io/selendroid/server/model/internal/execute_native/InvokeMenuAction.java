@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,13 +13,18 @@
  */
 package io.selendroid.server.model.internal.execute_native;
 
-import io.selendroid.ServerInstrumentation;
+import io.selendroid.server.ServerInstrumentation;
 import io.selendroid.server.model.AndroidRElement;
 import io.selendroid.server.model.Session;
+import io.selendroid.server.util.SelendroidLogger;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-
+/**
+ * 
+ * @deprecated Please use new implemented extension mechanism
+ * @see <a href="https://github.com/selendroid/selendroid-extension">extension mechanism Docu</a>
+ */
 public class InvokeMenuAction implements NativeExecuteScript {
 
   private Session session;
@@ -42,10 +47,10 @@ public class InvokeMenuAction implements NativeExecuteScript {
       }
 
     } catch (Exception e) {
-      e.printStackTrace();
+      SelendroidLogger.error("Cannot invoke menu action", e);
       return "Must pass an AndroidRElement or integer to invokeMenuActionSync (check adb log for full stacktrace): " + e.getMessage();
     }
-    serverInstrumentation.invokeMenuActionSync(serverInstrumentation.getCurrentActivity(), id, 0);
+    serverInstrumentation.getInstrumentation().invokeMenuActionSync(serverInstrumentation.getCurrentActivity(), id, 0);
     return "invoked";
   }
 }

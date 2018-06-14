@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,11 +13,12 @@
  */
 package io.selendroid.nativetests;
 
+import io.selendroid.client.waiter.TestWaiter;
+import io.selendroid.client.waiter.WaitingConditions;
 import io.selendroid.support.BaseAndroidTest;
-import io.selendroid.waiter.TestWaiter;
-import io.selendroid.waiter.WaitingConditions;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
@@ -193,6 +194,7 @@ public class NativeElementInteractionTest extends BaseAndroidTest {
   }
 
   @Test
+  @Ignore("Test is flaky. It sends the .click() while the app is still animating opening the registration screen")
   public void shouldScrollAndEnterText() {
     openStartActivity();
 
@@ -202,10 +204,10 @@ public class NativeElementInteractionTest extends BaseAndroidTest {
     WebElement acceptAddsCheckbox = driver().findElement(By.id("input_adds"));
     if (acceptAddsCheckbox.isSelected()) {
       acceptAddsCheckbox.click();
-      Assert.assertEquals(true, acceptAddsCheckbox.isSelected());
+      Assert.assertEquals(false, acceptAddsCheckbox.isSelected());
     } else {
       acceptAddsCheckbox.click();
-      Assert.assertEquals(false, acceptAddsCheckbox.isSelected());
+      Assert.assertEquals(true, acceptAddsCheckbox.isSelected());
     }
   }
 

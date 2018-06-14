@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,20 +13,13 @@
  */
 package io.selendroid.support;
 
-import static io.selendroid.waiter.TestWaiter.waitFor;
-import io.selendroid.SelendroidCapabilities;
-import io.selendroid.SelendroidDriver;
-import io.selendroid.SelendroidLauncher;
-import io.selendroid.android.AndroidSdk;
-import io.selendroid.io.ShellCommand;
-import io.selendroid.server.util.HttpClientUtil;
-import io.selendroid.waiter.WaitingConditions;
-
-import java.io.File;
-import java.net.URL;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.exec.CommandLine;
+import io.selendroid.client.SelendroidDriver;
+import io.selendroid.client.waiter.WaitingConditions;
+import io.selendroid.common.SelendroidCapabilities;
+import io.selendroid.standalone.SelendroidConfiguration;
+import io.selendroid.standalone.SelendroidLauncher;
+import io.selendroid.standalone.log.LogLevelEnum;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -36,52 +29,40 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
+import java.util.concurrent.TimeUnit;
+
+import static io.selendroid.client.waiter.TestWaiter.waitFor;
 
 public class BaseAndroidTest {
-  private static SelendroidDriver driver = null;
-  protected SelendroidLauncher selendroidServerLauncher = null;
-  final String pathSeparator = File.separator;
-  public static final String NATIVE_APP = "NATIVE_APP";
-  public static final String WEBVIEW = "WEBVIEW";
+  protected static final String HOMESCREEN_ACTIVITY = "and-activity://io.selendroid.testapp.HomeScreenActivity";
+  protected static final String USER_REGISTRATION_ACTIVITY = "and-activity://io.selendroid.testapp.RegisterUserActivity";
+  private static SelendroidConfiguration conf = new SelendroidConfiguration();
+  private static SelendroidLauncher launcher = new SelendroidLauncher(conf);
 
-  public static SelendroidDriver driver() {
+  private SelendroidDriver driver = null;
+  public static final String NATIVE_APP = "NATIVE_APP";
+  public static final String WEBVIEW = "WEBVIEW_0";
+
+  public SelendroidDriver driver() {
     return driver;
   }
 
-  @BeforeClass
-  public static void startSelendroidServer() throws Exception {
-    CommandLine startSelendroid = new CommandLine(AndroidSdk.adb());
-    startSelendroid.addArgument("shell");
-    startSelendroid.addArgument("am");
-    startSelendroid.addArgument("instrument");
-    startSelendroid.addArgument("-e");
-    startSelendroid.addArgument("main_activity");
-    startSelendroid.addArgument("io.selendroid.testapp.HomeScreenActivity");
-    startSelendroid.addArgument("io.selendroid/.ServerInstrumentation");
-    ShellCommand.exec(startSelendroid);
-    CommandLine forwardPort = new CommandLine(AndroidSdk.adb());
-    forwardPort.addArgument("forward");
-    forwardPort.addArgument("tcp:8080");
-    forwardPort.addArgument("tcp:8080");
-
-    ShellCommand.exec(forwardPort);
-    // instrumentation needs a beat to come up before connecting right away
-    // without this the first test often will fail, there's a similar wait
-    // in the selendroid-standalone
-    HttpClientUtil.waitForServer(8080);
-  }
-
-
-
   @Before
   public void setup() throws Exception {
-    driver =
-        new SelendroidDriver(new URL("http://localhost:8080/wd/hub"), getDefaultCapabilities());
+    createDriver(getDefaultCapabilities());
+  }
+
+  @After
+  public void teardown() {
+    closeDriver();
+  }
+
+  protected void createDriver(final DesiredCapabilities caps) throws Exception {
+    driver = new SelendroidDriver(caps);
     driver().manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
   }
 
-  @AfterClass
-  public static void teardown() {
+  protected void closeDriver() {
     if (driver() != null) {
       driver().quit();
     }
@@ -94,16 +75,20 @@ public class BaseAndroidTest {
 
     driver().context(WEBVIEW);
     driver().get(page);
-    //waitFor(WaitingConditions.driverUrlToBe(driver(), page),15,TimeUnit.SECONDS);
+    // waitFor(WaitingConditions.driverUrlToBe(driver(), page),15,TimeUnit.SECONDS);
   }
 
   protected void openStartActivity() {
     driver().context(NATIVE_APP);
-    driver().get("and-activity://io.selendroid.testapp.HomeScreenActivity");
+    driver().get(HOMESCREEN_ACTIVITY);
   }
 
-  protected DesiredCapabilities getDefaultCapabilities() {
-    return SelendroidCapabilities.emulator("io.selendroid.testapp:0.8.0-SNAPSHOT");
+  protected SelendroidCapabilities getDefaultCapabilities() {
+    SelendroidCapabilities caps = new SelendroidCapabilities();
+    caps.setAut("io.selendroid.testapp:0.12.0-SNAPSHOT");
+    caps.setLaunchActivity("io.selendroid.testapp.HomeScreenActivity");
+
+    return caps;
   }
 
   @Rule
@@ -127,4 +112,15 @@ public class BaseAndroidTest {
       };
     }
   };
+
+  @BeforeClass
+  public static void startSelendroidServer() throws Exception {
+    conf.setLogLevel(LogLevelEnum.DEBUG);
+    launcher.launchSelendroid();
+  }
+
+  @AfterClass
+  public static void stopSelendroidServer() {
+    launcher.stopSelendroid();
+  }
 }

@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>io.selendroid</groupId>
 		<artifactId>selendroid</artifactId>
-		<version>0.11.0-SNAPSHOT</version>
+		<version>0.18.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>selendroid-client</artifactId>
 	<name>selendroid-client</name>
@@ -19,6 +19,11 @@
 			<artifactId>selendroid-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>io.selendroid</groupId>
+			<artifactId>selendroid-server-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>		
 	</dependencies>
 	<build>
 		<sourceDirectory>src/main/java</sourceDirectory>

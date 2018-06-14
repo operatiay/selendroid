@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,23 +13,23 @@
  */
 package io.selendroid.server.handler;
 
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-
 import org.json.JSONException;
-import io.selendroid.exceptions.SelendroidException;
-import io.selendroid.server.SelendroidResponse;
-import org.webbitserver.HttpRequest;
 
-public class UnknownCommandHandler extends RequestHandler {
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.StatusCode;
+import io.selendroid.server.common.exceptions.SelendroidException;
+import io.selendroid.server.common.http.HttpRequest;
+
+public class UnknownCommandHandler extends SafeRequestHandler {
 
   public UnknownCommandHandler(String mappedUri) {
     super(mappedUri);
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException {
-    return new SelendroidResponse(getSessionId(request), 9, new SelendroidException(
+  public Response safeHandle(HttpRequest request) throws JSONException {
+    return new SelendroidResponse(getSessionId(request), StatusCode.UNKNOWN_COMMAND, new SelendroidException(
         "The requested command is currently not yet supported by selendroid."));
   }
 }

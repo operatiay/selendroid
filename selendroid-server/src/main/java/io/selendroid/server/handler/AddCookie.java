@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,18 +13,19 @@
  */
 package io.selendroid.server.handler;
 
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-import io.selendroid.server.SelendroidResponse;
 import io.selendroid.server.model.Cookie;
-import io.selendroid.util.SelendroidLogger;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.webbitserver.HttpRequest;
+import io.selendroid.server.util.SelendroidLogger;
 
 import java.util.Date;
 
-public class AddCookie extends RequestHandler {
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.http.HttpRequest;
+
+public class AddCookie extends SafeRequestHandler {
 
   public AddCookie(String mappedUri) {
     super(mappedUri);
@@ -32,8 +33,7 @@ public class AddCookie extends RequestHandler {
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException {
-
+  public Response safeHandle(HttpRequest request) throws JSONException {
     Date expiry = null;
     SelendroidLogger.info("set cookie to a session command");
     String url = getSelendroidDriver(request).getCurrentUrl();

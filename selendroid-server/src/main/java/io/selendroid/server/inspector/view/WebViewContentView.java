@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,15 +13,14 @@
  */
 package io.selendroid.server.inspector.view;
 
-import io.selendroid.ServerInstrumentation;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.common.http.HttpResponse;
 import io.selendroid.server.inspector.SelendroidInspectorView;
 import io.selendroid.server.model.SelendroidDriver;
 
-import java.nio.charset.Charset;
-
 import org.json.JSONException;
-import org.webbitserver.HttpRequest;
-import org.webbitserver.HttpResponse;
+
 
 public class WebViewContentView extends SelendroidInspectorView {
   public WebViewContentView(ServerInstrumentation serverInstrumentation, SelendroidDriver driver) {
@@ -30,7 +29,6 @@ public class WebViewContentView extends SelendroidInspectorView {
 
   public void render(HttpRequest request, HttpResponse response) throws JSONException {
     String source = "<html><head></head><body>SAMPLE SOURCE</body></html>";
-    response.header("Content-type", "application/x-javascript").charset(Charset.forName("UTF-8"))
-        .content(source).end();
+    response.setContentType("application/x-javascript").setContent(source).setStatus(200).end();
   }
 }

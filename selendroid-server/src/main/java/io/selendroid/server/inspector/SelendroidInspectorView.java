@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,11 +13,12 @@
  */
 package io.selendroid.server.inspector;
 
-import org.json.JSONException;
-import io.selendroid.ServerInstrumentation;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.common.http.HttpResponse;
 import io.selendroid.server.model.SelendroidDriver;
-import org.webbitserver.HttpRequest;
-import org.webbitserver.HttpResponse;
+
+import org.json.JSONException;
 
 
 public abstract class SelendroidInspectorView {

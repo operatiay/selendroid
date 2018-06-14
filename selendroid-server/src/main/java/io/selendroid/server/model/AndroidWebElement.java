@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,11 +13,11 @@
  */
 package io.selendroid.server.model;
 
-import io.selendroid.android.internal.Dimension;
-import io.selendroid.android.internal.Point;
-import io.selendroid.exceptions.ElementNotVisibleException;
-import io.selendroid.exceptions.NoSuchElementException;
-import io.selendroid.exceptions.SelendroidException;
+import io.selendroid.server.android.internal.Dimension;
+import io.selendroid.server.android.internal.Point;
+import io.selendroid.server.common.exceptions.ElementNotVisibleException;
+import io.selendroid.server.common.exceptions.NoSuchElementException;
+import io.selendroid.server.common.exceptions.SelendroidException;
 import io.selendroid.server.model.interactions.AndroidCoordinates;
 import io.selendroid.server.model.interactions.Coordinates;
 import io.selendroid.server.model.internal.AbstractWebElementContext;
@@ -72,9 +72,6 @@ public class AndroidWebElement implements AndroidElement {
               AndroidWebElement.this);
 
       List<AndroidElement> elements = replyElements(result);
-      if (elements == null || elements.isEmpty()) {
-        throw new NoSuchElementException("no elements were found.");
-      }
       return elements;
     }
   }
@@ -207,7 +204,7 @@ public class AndroidWebElement implements AndroidElement {
 
   private Point getCenterCoordinates() {
     if (!isDisplayed()) {
-      final String msg = "This WebElement is not visisble and may not be clicked.";
+      final String msg = "This WebElement is not visible and may not be clicked.";
       if (android.os.Build.VERSION.SDK_INT <= 18) {
         throw new ElementNotVisibleException(msg);
       } else {
@@ -233,8 +230,9 @@ public class AndroidWebElement implements AndroidElement {
       throw new SelendroidException(e);
     }
 
-    return new Point(topLeft.x + Integer.parseInt(result[0]) / 2, topLeft.y
-        + Integer.parseInt(result[1]) / 2);
+    int xSize = (new Double(result[0])).intValue();
+    int ySize = (new Double(result[1])).intValue();
+    return new Point(topLeft.x + xSize / 2, topLeft.y+ ySize / 2);
   }
 
   @Override
@@ -338,7 +336,11 @@ public class AndroidWebElement implements AndroidElement {
     parameter.put(this);
     parameter.put(getText() + sb.toString());
 
-    driver.executeScript("arguments[0].value = arguments[1]", parameter, ke);
+    driver.executeScript("arguments[0].value = arguments[1];" +
+            "var inputEvent = document.createEvent('Event');" +
+            "inputEvent.initEvent('input', true, true);" +
+            "arguments[0].dispatchEvent(inputEvent);"
+            , parameter, ke);
   }
 
   @Override

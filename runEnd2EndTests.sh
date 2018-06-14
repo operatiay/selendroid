@@ -54,17 +54,22 @@ END=$(date +%s)
 DIFF=$(( $END - $START ))
 echo "It took $DIFF seconds"
 
+echo "Make the sdcard writable"
+adb shell <<DONE
+su
+mount -o rw,remount rootfs /
+chmod 777 /mnt/sdcard
+exit
+exit
+DONE
 
-echo "Install apks"
-adb install -r selendroid-server/target/selendroid-server-${selendroid_version}.apk
+echo "Install test-app apk"
 adb install -r selendroid-test-app/target/selendroid-test-app-${selendroid_version}.apk
-
-echo "Run selendroid server"
-adb shell am instrument -e main_activity 'io.selendroid.testapp.HomeScreenActivity' io.selendroid/.ServerInstrumentation
-adb forward tcp:8080 tcp:8080
 
 echo "Running End-to-End Tests"
 mvn install -pl selendroid-test-app -DskipTests=false
+# for running aspecific test
+# mvn install -pl selendroid-test-app -DskipTests=false -Dtest=WaitForProgressBarGoneAwayTest
 
 echo "Stopping Emulator"
 adb -s  emulator-$emulator_port emu kill

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,29 +13,28 @@
  */
 package io.selendroid.server.handler;
 
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-
 import org.json.JSONException;
-import io.selendroid.exceptions.SelendroidException;
-import io.selendroid.server.SelendroidResponse;
-import io.selendroid.util.SelendroidLogger;
-import org.webbitserver.HttpRequest;
 
-public class OpenUrl extends RequestHandler {
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.exceptions.SelendroidException;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.util.SelendroidLogger;
+
+public class OpenUrl extends SafeRequestHandler {
 
   public OpenUrl(String mappedUri) {
     super(mappedUri);
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException {
+  public Response safeHandle(HttpRequest request) throws JSONException {
     SelendroidLogger.info("Open URL command");
     String url = getPayload(request).getString("url");
     if (url == null || url.isEmpty()) {
-      return new SelendroidResponse(getSessionId(request), 13, new SelendroidException(
-          "Not able to open Url because Url is missing."));
+      throw new SelendroidException("Not able to open Url because Url is missing.");
     }
+
     getSelendroidDriver(request).get(url);
     return new SelendroidResponse(getSessionId(request), "");
   }

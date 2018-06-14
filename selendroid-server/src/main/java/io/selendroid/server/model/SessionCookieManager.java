@@ -16,8 +16,8 @@ limitations under the License.
 package io.selendroid.server.model;
 
 import android.webkit.CookieManager;
-import io.selendroid.exceptions.SelendroidException;
-import io.selendroid.util.SelendroidLogger;
+import io.selendroid.server.common.exceptions.SelendroidException;
+import io.selendroid.server.util.SelendroidLogger;
 
 import java.net.MalformedURLException;
 import java.net.URL;

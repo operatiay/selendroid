@@ -1,25 +1,33 @@
 package io.selendroid.server.handler.timeouts;
 
-import io.selendroid.ServerInstrumentation;
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-import io.selendroid.server.SelendroidResponse;
-import org.json.JSONException;
-import org.webbitserver.HttpRequest;
+import io.selendroid.server.ServerInstrumentation;
 
-public class TimeoutsHandler extends RequestHandler {
+import io.selendroid.server.ServerInstrumentationProvider;
+import org.json.JSONException;
+
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.StatusCode;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.handler.SafeRequestHandler;
+
+public class TimeoutsHandler extends SafeRequestHandler {
   public TimeoutsHandler(String uri) {
     super(uri);
   }
-  public Response handle(HttpRequest request) throws JSONException {
+  public Response safeHandle(HttpRequest request) throws JSONException {
     long timeout = getPayload(request).getLong("ms");
     String type = getPayload(request).getString("type");
     if (type.equals("script")) {
       getSelendroidDriver(request).setAsyncTimeout(timeout);
     } else if (type.equals("implicit")) {
-      ServerInstrumentation.getInstance().setImplicitWait(timeout);
+      ServerInstrumentationProvider.getServerInstrumentationInstance().setImplicitWait(timeout);
+    } else if (type.equals("page load")) {
+      getSelendroidDriver(request).setPageLoadTimeout(timeout);
     } else {
-      return new SelendroidResponse(getSessionId(request), 1, new Exception("Unsupported timeout type: " + type));
+      return new SelendroidResponse(getSessionId(request),
+          StatusCode.UNKNOWN_COMMAND,
+          new Exception("Unsupported timeout type: " + type));
     }
     return new SelendroidResponse(getSessionId(request), null);
   }

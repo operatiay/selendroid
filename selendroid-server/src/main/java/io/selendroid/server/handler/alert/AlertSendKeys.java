@@ -13,30 +13,26 @@
  */
 package io.selendroid.server.handler.alert;
 
-import io.selendroid.exceptions.SelendroidException;
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-import io.selendroid.server.SelendroidResponse;
-import org.json.JSONException;
-import org.webbitserver.HttpRequest;
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.StatusCode;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.handler.SafeRequestHandler;
 
-public class AlertSendKeys extends RequestHandler {
+import org.json.JSONException;
+
+public class AlertSendKeys extends SafeRequestHandler {
 
   public AlertSendKeys(String mappedUri) {
     super(mappedUri);
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException {
+  public Response safeHandle(HttpRequest request) throws JSONException {
     if (!getSelendroidDriver(request).isAlertPresent()) {
-      return new SelendroidResponse(getSessionId(request), 27, "no alert open");
+      return new SelendroidResponse(getSessionId(request), StatusCode.NO_ALERT_OPEN_ERROR, "no alert open");
     }
-    String keysToSend = null;
-    try {
-      keysToSend = getPayload(request).getString("text");
-    } catch (SelendroidException e) {
-      return new SelendroidResponse(getSessionId(request), 13, e);
-    }
+    String keysToSend = keysToSend = getPayload(request).getString("text");
     getSelendroidDriver(request).setAlertText(keysToSend);
     return new SelendroidResponse(getSessionId(request), null);
   }

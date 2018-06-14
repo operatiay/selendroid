@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,23 +13,21 @@
  */
 package io.selendroid.server.model;
 
-import io.selendroid.ServerInstrumentation;
-import io.selendroid.android.AndroidTouchScreen;
-import io.selendroid.android.InstrumentedMotionSender;
-import io.selendroid.android.internal.Dimension;
-import io.selendroid.exceptions.SelendroidException;
-import io.selendroid.exceptions.UnsupportedOperationException;
+import android.app.Activity;
+import android.util.DisplayMetrics;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.android.AndroidTouchScreen;
+import io.selendroid.server.android.InstrumentedMotionSender;
+import io.selendroid.server.android.internal.Dimension;
+import io.selendroid.server.common.exceptions.SelendroidException;
+import io.selendroid.server.common.exceptions.UnsupportedOperationException;
 import io.selendroid.server.model.DefaultSelendroidDriver.NativeSearchScope;
-
-import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.app.Activity;
-import android.graphics.Point;
-import android.view.Display;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 public class SelendroidNativeDriver {
   public final String ACTIVITY_URL_PREFIX = "and-activity://";
@@ -114,25 +112,19 @@ public class SelendroidNativeDriver {
       return;
     }
 
-    Class<?> clazz;
-    try {
-      clazz = Class.forName(dest.getAuthority());
-    } catch (ClassNotFoundException exception) {
-      exception.printStackTrace();
-      throw new SelendroidException("The specified Activity class does not exist: "
-          + dest.getAuthority(), exception);
-    }
-
-    serverInstrumentation.startActivity(clazz);
+    serverInstrumentation.startActivity(dest.getAuthority());
     DefaultSelendroidDriver.sleepQuietly(500);
   }
 
   public Dimension getWindowSize() {
-    Display display =
-        serverInstrumentation.getCurrentActivity().getWindowManager().getDefaultDisplay();
-    Point size = new Point();
-    display.getSize(size);
-    return new Dimension(size.x, size.y);
+    DisplayMetrics metrics = new DisplayMetrics();
+    serverInstrumentation
+        .getCurrentActivity()
+        .getWindowManager()
+        .getDefaultDisplay()
+        .getMetrics(metrics);
+
+    return new Dimension(metrics.widthPixels, metrics.heightPixels);
   }
 
   public void forward() {

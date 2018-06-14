@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,27 +13,17 @@
  */
 package io.selendroid.server;
 
-import io.selendroid.server.internal.Capabilities;
-import io.selendroid.server.internal.SelendroidAssert;
-
 import org.apache.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 
+import io.netty.handler.codec.http.HttpMethod;
+import io.selendroid.server.internal.Capabilities;
+import io.selendroid.server.internal.SelendroidAssert;
+
 
 public class CreateSessionHandlerTest extends BaseTest {
-
-  @Test
-  public void assertNewTestSessionCreationIsReturningNewURI() throws Exception {
-    HttpResponse response = executeCreateSessionRequest();
-    SelendroidAssert.assertResponseIsRedirect(response);
-    JSONObject json = parseJsonResponse(response);
-    Assert.assertEquals("http://localhost:8055/wd/hub/session/" + json.getString("sessionId"),
-        response.getFirstHeader("location").getValue());
-  }
-
   @Test
   public void assertNewTestSessionCreationAndGetCapabilties() throws Exception {
     HttpResponse sessionResponse = executeCreateSessionRequest();

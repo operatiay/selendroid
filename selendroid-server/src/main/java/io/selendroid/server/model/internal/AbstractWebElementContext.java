@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,19 +13,19 @@
  */
 package io.selendroid.server.model.internal;
 
-import io.selendroid.exceptions.SelendroidException;
+import io.selendroid.server.common.exceptions.SelendroidException;
 import io.selendroid.server.model.AndroidElement;
 import io.selendroid.server.model.AndroidWebElement;
 import io.selendroid.server.model.By;
+import io.selendroid.server.model.KnownElements;
+import io.selendroid.server.model.SearchContext;
+import io.selendroid.server.model.SelendroidWebDriver;
 import io.selendroid.server.model.By.ByClass;
 import io.selendroid.server.model.By.ById;
 import io.selendroid.server.model.By.ByLinkText;
 import io.selendroid.server.model.By.ByPartialLinkText;
 import io.selendroid.server.model.By.ByTagName;
 import io.selendroid.server.model.By.ByXPath;
-import io.selendroid.server.model.KnownElements;
-import io.selendroid.server.model.SearchContext;
-import io.selendroid.server.model.SelendroidWebDriver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,12 +73,13 @@ public abstract class AbstractWebElementContext
   }
 
   protected List<AndroidElement> replyElements(JSONArray result) {
-    if (result == null || result.length() == 0) {
-      return null;
-    }
     List<AndroidElement> elements = new ArrayList<AndroidElement>();
+    if (result == null) {
+      return elements;
+    }
+
     try {
-      if (result != null && result.length() > 0) {
+      if (result.length() > 0) {
         for (int i = 0; i < result.length(); i++) {
           JSONObject element = result.getJSONObject(i);
           String id = element.getString("ELEMENT");

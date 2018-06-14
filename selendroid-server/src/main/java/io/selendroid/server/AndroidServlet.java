@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,68 +13,23 @@
  */
 package io.selendroid.server;
 
-import io.selendroid.exceptions.AppCrashedException;
-import io.selendroid.exceptions.StaleElementReferenceException;
-import io.selendroid.server.handler.AddCookie;
-import io.selendroid.server.handler.CaptureScreenshot;
-import io.selendroid.server.handler.ClearElement;
-import io.selendroid.server.handler.ClickElement;
-import io.selendroid.server.handler.DeleteCookies;
-import io.selendroid.server.handler.DeleteNamedCookie;
-import io.selendroid.server.handler.DeleteSession;
-import io.selendroid.server.handler.DoubleTapOnElement;
-import io.selendroid.server.handler.Down;
-import io.selendroid.server.handler.ElementLocation;
-import io.selendroid.server.handler.FindChildElement;
-import io.selendroid.server.handler.FindChildElements;
-import io.selendroid.server.handler.FindElement;
-import io.selendroid.server.handler.FindElements;
-import io.selendroid.server.handler.Flick;
-import io.selendroid.server.handler.FrameSwitchHandler;
-import io.selendroid.server.handler.GetCapabilities;
-import io.selendroid.server.handler.GetCommandConfiguration;
-import io.selendroid.server.handler.GetContext;
-import io.selendroid.server.handler.GetContexts;
-import io.selendroid.server.handler.GetCookies;
-import io.selendroid.server.handler.GetCurrentUrl;
-import io.selendroid.server.handler.GetElementAttribute;
-import io.selendroid.server.handler.GetElementDisplayed;
-import io.selendroid.server.handler.GetElementEnabled;
-import io.selendroid.server.handler.GetElementLocationInView;
-import io.selendroid.server.handler.GetElementSelected;
-import io.selendroid.server.handler.GetElementSize;
-import io.selendroid.server.handler.GetElementTagName;
-import io.selendroid.server.handler.GetPageTitle;
-import io.selendroid.server.handler.GetScreenOrientation;
-import io.selendroid.server.handler.GetScreenState;
-import io.selendroid.server.handler.GetText;
-import io.selendroid.server.handler.GetWindowSize;
-import io.selendroid.server.handler.GoBack;
-import io.selendroid.server.handler.GoForward;
-import io.selendroid.server.handler.InspectorTap;
-import io.selendroid.server.handler.ListSessions;
-import io.selendroid.server.handler.LogElement;
-import io.selendroid.server.handler.LogElementTree;
-import io.selendroid.server.handler.LongPressOnElement;
-import io.selendroid.server.handler.Move;
-import io.selendroid.server.handler.NewSession;
-import io.selendroid.server.handler.OpenUrl;
-import io.selendroid.server.handler.Refresh;
-import io.selendroid.server.handler.RotateScreen;
-import io.selendroid.server.handler.Scroll;
-import io.selendroid.server.handler.SendKeyToActiveElement;
-import io.selendroid.server.handler.SendKeys;
-import io.selendroid.server.handler.SetCommandConfiguration;
-import io.selendroid.server.handler.SetScreenState;
-import io.selendroid.server.handler.SingleTapOnElement;
-import io.selendroid.server.handler.SubmitForm;
-import io.selendroid.server.handler.SwitchContext;
-import io.selendroid.server.handler.UnknownCommandHandler;
-import io.selendroid.server.handler.Up;
+import io.selendroid.server.common.BaseRequestHandler;
+import io.selendroid.server.common.BaseServlet;
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.StatusCode;
+import io.selendroid.server.common.exceptions.AppCrashedException;
+import io.selendroid.server.common.exceptions.StaleElementReferenceException;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.common.http.HttpResponse;
+import io.selendroid.server.common.http.TrafficCounter;
+import io.selendroid.server.extension.ExtensionLoader;
+import io.selendroid.server.handler.*;
 import io.selendroid.server.handler.alert.Alert;
 import io.selendroid.server.handler.alert.AlertAccept;
 import io.selendroid.server.handler.alert.AlertDismiss;
 import io.selendroid.server.handler.alert.AlertSendKeys;
+import io.selendroid.server.handler.extension.ExtensionCallHandler;
 import io.selendroid.server.handler.network.GetNetworkConnectionType;
 import io.selendroid.server.handler.script.ExecuteAsyncScript;
 import io.selendroid.server.handler.script.ExecuteScript;
@@ -83,17 +38,17 @@ import io.selendroid.server.handler.timeouts.SetImplicitWaitTimeout;
 import io.selendroid.server.handler.timeouts.TimeoutsHandler;
 import io.selendroid.server.model.DefaultSelendroidDriver;
 import io.selendroid.server.model.SelendroidDriver;
-import io.selendroid.util.SelendroidLogger;
-
-import org.webbitserver.HttpRequest;
+import io.selendroid.server.util.SelendroidLogger;
 
 import java.net.URLDecoder;
 
 public class AndroidServlet extends BaseServlet {
   private SelendroidDriver driver = null;
+  protected ExtensionLoader extensionLoader = null;
 
-  public AndroidServlet(SelendroidDriver driver) {
+  public AndroidServlet(SelendroidDriver driver, ExtensionLoader extensionLoader) {
     this.driver = driver;
+    this.extensionLoader = extensionLoader;
     init();
   }
 
@@ -129,13 +84,13 @@ public class AndroidServlet extends BaseServlet {
     register(getHandler, new LogElement("/wd/hub/session/:sessionId/element/:id/source"));
     register(postHandler, new SubmitForm("/wd/hub/session/:sessionId/element/:id/submit"));
     register(getHandler, new GetText("/wd/hub/session/:sessionId/element/:id/text"));
-    register(postHandler, new SendKeys("/wd/hub/session/:sessionId/element/:id/value"));
+    register(postHandler, new SendKeysToElement("/wd/hub/session/:sessionId/element/:id/value"));
     register(getHandler, new GetElementSize("/wd/hub/session/:sessionId/element/:id/size"));
     register(postHandler, new ExecuteScript("/wd/hub/session/:sessionId/execute"));
     register(postHandler, new ExecuteAsyncScript("/wd/hub/session/:sessionId/execute_async"));
     register(postHandler, new GoForward("/wd/hub/session/:sessionId/forward"));
     register(postHandler, new FrameSwitchHandler("/wd/hub/session/:sessionId/frame"));
-    register(postHandler, new SendKeyToActiveElement("/wd/hub/session/:sessionId/keys"));
+    register(postHandler, new SendKeys("/wd/hub/session/:sessionId/keys"));
     register(postHandler, new Refresh("/wd/hub/session/:sessionId/refresh"));
     register(getHandler, new CaptureScreenshot("/wd/hub/session/:sessionId/screenshot"));
     register(getHandler, new LogElementTree("/wd/hub/session/:sessionId/source"));
@@ -163,6 +118,8 @@ public class AndroidServlet extends BaseServlet {
     register(postHandler, new DoubleTapOnElement("/wd/hub/session/:sessionId/touch/doubleclick"));
     register(postHandler, new LongPressOnElement("/wd/hub/session/:sessionId/touch/longclick"));
     register(postHandler, new Flick("/wd/hub/session/:sessionId/touch/flick"));
+    // Track-ball functionality
+    register(postHandler, new Roll("/wd/hub/session/:sessionId/trackball/roll"));
     
     // The new endpoints for context switching coming with Selenium 3.0 & mobile spec
     register(getHandler, new GetNetworkConnectionType("/wd/hub/session/:sessionId/network_connection"));
@@ -171,13 +128,30 @@ public class AndroidServlet extends BaseServlet {
     register(postHandler, new SwitchContext("/wd/hub/session/:sessionId/context"));
 
     // Custom extensions to wire protocol
-    register(getHandler, new GetScreenState("/wd/hub/-selendroid/:sessionId/screen/brightness"));
-    register(postHandler, new SetScreenState("/wd/hub/-selendroid/:sessionId/screen/brightness"));
+    register(getHandler, new GetScreenState("/wd/hub/session/:sessionId/selendroid/screen/brightness"));
+    register(postHandler, new SetScreenState("/wd/hub/session/:sessionId/selendroid/screen/brightness"));
     register(postHandler, new InspectorTap("/wd/hub/session/:sessionId/tap/2"));
     register(getHandler, new GetCommandConfiguration(
-        "/wd/hub/-selendroid/:sessionId/configure/command/:command"));
+        "/wd/hub/session/:sessionId/selendroid/configure/command/:command"));
     register(postHandler, new SetCommandConfiguration(
-        "/wd/hub/-selendroid/:sessionId/configure/command/:command"));
+        "/wd/hub/session/:sessionId/selendroid/configure/command/:command"));
+    register(postHandler, new ForceGcExplicitly("/wd/hub/session/:sessionId/selendroid/gc"));
+    register(postHandler, new SetSystemProperty("/wd/hub/session/:sessionId/selendroid/systemProperty"));
+
+    // Endpoints to send app to background and resume it
+    register(postHandler, new BackgroundApp("/wd/hub/session/:sessionId/selendroid/background"));
+    register(postHandler, new ResumeApp("/wd/hub/session/:sessionId/selendroid/resume"));
+
+    // Endpoints to add to and read call logs
+    register(postHandler, new AddCallLog("/wd/hub/session/:sessionId/selendroid/addCallLog"));
+    register(postHandler, new ReadCallLog("/wd/hub/session/:sessionId/selendroid/readCallLog"));
+
+    // Handle calls to dynamically loaded handlers
+    register(postHandler, new ExtensionCallHandler(
+        "/wd/hub/session/:sessionId/selendroid/extension", extensionLoader));
+
+    // Actions sequencing endpoint
+    register(postHandler, new Actions("/wd/hub/session/:sessionId/actions"));
 
     // currently not yet supported
     register(getHandler, new UnknownCommandHandler(
@@ -266,23 +240,23 @@ public class AndroidServlet extends BaseServlet {
   @Override
   public void handleRequest(HttpRequest request, HttpResponse response, BaseRequestHandler handler) {
     if ("/favicon.ico".equals(request.uri()) && handler == null) {
-      response.setStatus(404);
-      response.end();
+      response.setStatus(404).end();
       return;
     } else if (handler == null) {
-      SelendroidLogger.info("handler is null. not support uri is: " + request.uri());
-      replyWithServerError(response);
+      response.setStatus(404).end();
       return;
     }
-    Response result = null;
+    Response result;
     try {
       addHandlerAttributesToRequest(request, handler.getMappedUri());
       if (!handler.commandAllowedWithAlertPresentInWebViewMode()) {
-        DefaultSelendroidDriver driver =
-            (DefaultSelendroidDriver) request.data().get(AndroidServlet.DRIVER_KEY);
+        SelendroidDriver driver =
+            (SelendroidDriver) request.data().get(AndroidServlet.DRIVER_KEY);
         if (driver != null && driver.isAlertPresent()) {
           result =
-              new SelendroidResponse(handler.getSessionId(request), 26, "Unhandled Alert present");
+              new SelendroidResponse(handler.getSessionId(request),
+                  StatusCode.UNEXPECTED_ALERT_OPEN,
+                  "Unhandled Alert present");
           handleResponse(request, response, (SelendroidResponse) result);
           return;
         }
@@ -290,28 +264,34 @@ public class AndroidServlet extends BaseServlet {
       result = handler.handle(request);
     } catch (StaleElementReferenceException se) {
       try {
+        SelendroidLogger.error("StaleElementReferenceException", se);
         String sessionId = getParameter(handler.getMappedUri(), request.uri(), ":sessionId");
-        result = new SelendroidResponse(sessionId, 10, se);
+        result = new SelendroidResponse(sessionId, StatusCode.STALE_ELEMENT_REFERENCE, se);
       } catch (Exception e) {
-        SelendroidLogger.error("Error occurred while handling request and got StaleRef.", e);
+        SelendroidLogger.error("Error responding to StaleElementReferenceException", e);
         replyWithServerError(response);
         return;
       }
     } catch (AppCrashedException ae) {
       try {
+        SelendroidLogger.error("App crashed when handling request", ae);
         String sessionId = getParameter(handler.getMappedUri(), request.uri(), ":sessionId");
-        result = new SelendroidResponse(sessionId, 13, ae);
+        result = new SelendroidResponse(sessionId, StatusCode.UNKNOWN_ERROR, ae);
       } catch (Exception e) {
-        SelendroidLogger.error("Error occurred while handling request and got AppCrashedException.",
-            e);
+        SelendroidLogger.error("Error responding to app crash", e);
         replyWithServerError(response);
         return;
       }
     } catch (Exception e) {
-      SelendroidLogger.error("Error occurred while handling request.", e);
+      SelendroidLogger.error("Error handling request.", e);
       replyWithServerError(response);
       return;
     }
     handleResponse(request, response, (SelendroidResponse) result);
+    String trafficStatistics = String.format(
+        "traffic_stats: rx_bytes %d tx_bytes %d",
+        TrafficCounter.readBytes(),
+        TrafficCounter.writtenBytes());
+    SelendroidLogger.info(trafficStatistics);
   }
 }

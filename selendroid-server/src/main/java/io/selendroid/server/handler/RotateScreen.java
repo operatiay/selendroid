@@ -13,24 +13,24 @@
  */
 package io.selendroid.server.handler;
 
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-import io.selendroid.server.SelendroidResponse;
 import io.selendroid.server.model.ScreenOrientation;
-import io.selendroid.util.SelendroidLogger;
+import io.selendroid.server.util.SelendroidLogger;
 
 import org.json.JSONException;
-import org.webbitserver.HttpRequest;
+
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.http.HttpRequest;
 
 
-public class RotateScreen extends RequestHandler {
+public class RotateScreen extends SafeRequestHandler {
 
   public RotateScreen(String mappedUri) {
     super(mappedUri);
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException {
+  public Response safeHandle(HttpRequest request) throws JSONException {
     SelendroidLogger.info("Rotate screen");
     String orientation = getPayload(request).getString("orientation");
 

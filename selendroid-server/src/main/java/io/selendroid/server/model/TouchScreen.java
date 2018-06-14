@@ -14,6 +14,8 @@
 package io.selendroid.server.model;
 
 
+import io.selendroid.server.android.internal.Point;
+import io.selendroid.server.common.action.touch.FlickDirection;
 import io.selendroid.server.model.interactions.Coordinates;
 
 /**
@@ -31,28 +33,62 @@ public interface TouchScreen {
   /**
    * Allows the execution of the gesture 'down' on the screen. It is typically the first of a
    * sequence of touch gestures.
-   * 
+   *
    * @param x The x coordinate relative to the viewport
    * @param y The y coordinate relative to the viewport
    */
   void down(int x, int y);
 
   /**
+   * Allows the execution of the gesture 'down' on the screen. It is typically the first of a
+   * sequence of touch gestures.  Supports multitouch.
+   * 
+   * @param x The x coordinate relative to the viewport
+   * @param y The y coordinate relative to the viewport
+   * @param id The id of the pointer performing the action.  0 for single touch.
+   */
+  void down(int x, int y, int id);
+
+  /**
    * Allows the execution of the gesture 'up' on the screen. It is typically the last of a sequence
    * of touch gestures.
-   * 
+   *
    * @param x The x coordinate relative to the viewport
    * @param y The y coordinate relative to the viewport
    */
   void up(int x, int y);
 
   /**
-   * Allows the execution of the gesture 'move' on the screen.
+   * Allows the execution of the gesture 'up' on the screen. It is typically the last of a sequence
+   * of touch gestures.  Supports multitouch.
    * 
+   * @param x The x coordinate relative to the viewport
+   * @param y The y coordinate relative to the viewport
+   * @param id The id of the pointer performing the action.  0 for single touch.
+   */
+  void up(int x, int y, int id);
+
+  /**
+   * Allows the execution of the gesture 'move' on the screen.
+   *
    * @param x The x coordinate relative to the viewport
    * @param y The y coordinate relative to the viewport
    */
   void move(int x, int y);
+
+  /**
+   * Allows the execution of the gesture 'move' on the screen.  Supports multitouch.
+   * 
+   * @param x The x coordinate relative to the viewport
+   * @param y The y coordinate relative to the viewport
+   * @param id The id of the pointer performing the action.  0 for single touch.
+   */
+  void move(int x, int y, int id);
+
+  /**
+   * Calls 'up' on all current pointers, cancelling the gesture.
+   */
+  void cancel();
 
   /**
    * Creates a scroll gesture that starts on a particular screen location.
@@ -101,6 +137,16 @@ public interface TouchScreen {
    * @param yOffset The y offset relative to the viewport
    */
   void flick(Coordinates where, int xOffset, int yOffset, int speed);
+
+  /***
+   * Allows the execution of a flick gesture at a given starting point
+   *
+   * @param origin Starting point of the flick
+   * @param direction Direction in which the flick should be performed
+   * @param distance Distance over which the finger should be down during the flick motion
+   * @param duration Duration the finger should be down on the touch screen
+   */
+  void flick(Point origin, FlickDirection direction, int distance, int duration);
 
   /**
    * @return The current screen brightness as a float between 0 and 1. If the screen is off, 0.0 will be returned.

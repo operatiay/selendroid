@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -15,10 +15,10 @@ package io.selendroid.server;
 
 
 
+import io.netty.handler.codec.http.HttpMethod;
 import io.selendroid.server.internal.SelendroidAssert;
 
 import org.apache.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.json.JSONObject;
 import org.junit.Assert;
 
@@ -41,7 +41,7 @@ public class FindElementHandlerTest extends BaseTest {
     payload.put("using", "id");
     payload.put("value", "my_button_bar");
 
-    String url = "http://"+host+":" + port + "/wd/hub/session/" + sessionId + "/element";
+    String url = "http://" + host + ":" + port + "/wd/hub/session/" + sessionId + "/element";
     HttpResponse element = executeRequestWithPayload(url, HttpMethod.POST, payload.toString());
     SelendroidAssert.assertResponseIsOk(element);
   }

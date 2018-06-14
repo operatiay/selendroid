@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,26 +13,26 @@
  */
 package io.selendroid.server.handler;
 
-import io.selendroid.android.internal.Point;
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-import io.selendroid.server.SelendroidResponse;
 import io.selendroid.server.model.SelendroidDriver;
 import io.selendroid.server.model.interactions.AndroidCoordinates;
-import io.selendroid.util.SelendroidLogger;
+import io.selendroid.server.util.SelendroidLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webbitserver.HttpRequest;
 
-public class InspectorTap extends RequestHandler {
+import io.selendroid.server.android.internal.Point;
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.http.HttpRequest;
+
+public class InspectorTap extends SafeRequestHandler {
 
   public InspectorTap(String mappedUri) {
     super(mappedUri);
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException {
+  public Response safeHandle(HttpRequest request) throws JSONException {
     SelendroidLogger.info("Inspector click on position command");
 
     JSONObject payload = getPayload(request);

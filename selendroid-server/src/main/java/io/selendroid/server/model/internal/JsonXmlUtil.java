@@ -17,6 +17,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import io.selendroid.server.util.SelendroidLogger;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
@@ -29,7 +31,8 @@ public class JsonXmlUtil {
     try {
       builder = builderFactory.newDocumentBuilder();
     } catch (ParserConfigurationException e) {
-      e.printStackTrace();
+      SelendroidLogger.error("Failed to create documentBuilder", e);
+      throw new RuntimeException(e);
     }
     Document document = builder.newDocument();
 
@@ -73,6 +76,25 @@ public class JsonXmlUtil {
     node.setAttribute("ref", from.optString("ref"));
     node.setAttribute("id", from.optString("id"));
     node.setAttribute("shown", from.optString("shown"));
+
+    String error = from.optString("error");
+    if(error != null){
+      node.setAttribute("error", error);
+    };
+
+    JSONObject rect = from.optJSONObject("rect");
+    if (rect != null) {
+      Element rectNode = document.createElement("rect");
+      JSONObject size = rect.optJSONObject("size");
+      JSONObject origin = rect.optJSONObject("origin");
+
+      rectNode.setAttribute("x", origin.optString("x"));
+      rectNode.setAttribute("y", origin.optString("y"));
+      rectNode.setAttribute("height", size.optString("height"));
+      rectNode.setAttribute("width", size.optString("width"));
+
+      node.appendChild(rectNode);
+    }
 
     JSONArray array = from.optJSONArray("children");
     if (array != null) {

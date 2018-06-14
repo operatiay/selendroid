@@ -1,0 +1,564 @@
+/*
+ * Copyright 2012-2015 eBay Software Foundation and selendroid committers.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+package io.selendroid.standalone;
+
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import io.selendroid.standalone.log.LogLevelConverter;
+import io.selendroid.standalone.log.LogLevelEnum;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+import org.openqa.selenium.support.ui.FluentWait;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+public class SelendroidConfiguration {
+
+  @Parameter(description = "port the server will listen on.", names = "-port")
+  private int port = 4444;
+
+  @Parameter(description = "timeout that will be used to start Android emulators",
+             names = "-timeoutEmulatorStart")
+  private long timeoutEmulatorStart = 300000;
+
+  @Parameter(description = "location of the application under test. Absolute path to the apk",
+             names = {
+                 "-app", "-aut"})
+  private List<String> supportedApps = new ArrayList<String>();
+
+  @Deprecated
+  @Parameter(names = "-verbose", description = "Debug mode")
+  private boolean verbose = false;
+
+  @Parameter(names = "-emulatorPort", description = "port number to start running emulators on")
+  private int emulatorPort = 5560;
+
+  @Parameter(names = "-deviceScreenshot",
+             description = "if true, screenshots will be taken on the device instead of using the ddmlib libary.")
+  private boolean deviceScreenshot = false;
+
+  @Parameter(
+      description = "the port the selendroid-standalone is using to communicate with instrumentation server",
+      names = {"-selendroidServerPort"})
+  private int selendroidServerPort = 8080;
+
+  @Parameter(
+      description = "re-use the configured -selendroidServerPort for each test session",
+      names = {"-reuseSelendroidServerPort"})
+  private boolean reuseSelendroidServerPort = false;
+
+  @Parameter(description = "The file of the keystore to be used", names = {"-keystore"})
+  private String keystore = null;
+
+  @Parameter(description = "The password for the keystore to be used", names = {"-keystorePassword"})
+  private String keystorePassword = null;
+
+  @Parameter(description = "The alias of the keystore to be used", names = {"-keystoreAlias"})
+  private String keystoreAlias = null;
+
+  @Parameter(description = "The emulator options used for starting emulators: e.g. -no-audio. When passing multiple options, put them in double quotes: e.g. \"-no-audio -no-window\"",
+             names = {"-emulatorOptions"})
+  private String emulatorOptions = null;
+
+  @Parameter(names = "-keepEmulator",
+          description = "if true, emulator will be kept running after test ends.")
+  private boolean keepEmulator = false;
+
+  @Parameter(
+      description = "if specified, will send a registration request to the given url. Example : http://localhost:4444/grid/register",
+      names = "-hub")
+  private String registrationUrl = null;
+
+  @Parameter(
+      description = "if specified, will specify the remote proxy to use on the grid. Example : io.selendroid.grid.SelendroidSessionProxy",
+      names = "-proxy")
+  private String proxy = null;
+
+  @Parameter(
+      description = "host of the node. Ip address needs to be specified for registering to a grid hub (guessing can be wrong complex).",
+      names = "-host")
+  private String serverHost;
+
+  @Parameter(names = "-keepAdbAlive",
+             description = "If true, adb will not be terminated on server shutdown.")
+  private boolean keepAdbAlive = false;
+
+  @Parameter(names = "-maxSession", description = "Maximum number of sessions that a grid hub can assign at a time. " +
+          "Default 0, use number of supported devices")
+  private int maxSession = 0;
+
+  @Parameter(names = "-maxInstances", description = "Maximum number of instances that a grid hub can use at a time.")
+  private int maxInstances = 1;
+
+  @Parameter(names = "-registerCycle", description = "How often in ms the node will try to register itself again" +
+          ".Allow to restart the hub without having to restart the nodes. 0 to disable auto register. Default 0.")
+  private long registerCycle = 0;
+
+  @Parameter(names = "-cleanupCycle",
+          description = "How often in ms a proxy will check for timed out thread. Default 5000")
+  private long cleanupCycle = 5000;
+
+  @Parameter(names = "-timeout", description = "The timeout in seconds before the hub automatically ends a test " +
+          "that hasn't had any activity in the last X seconds. The browser will be released for another test to use." +
+          "This typically takes care of the client crashes. Default 300000.")
+  private long timeout = 300000;
+
+  @Parameter(names = "-nodePolling", description = "Interval in ms between alive checks of node how often the hub checks " +
+          "if the node is still alive. Default 5000")
+  private long nodePolling  = 5000;
+
+  @Parameter(names = "-unregisterIfStillDownAfter", description = "If the node remains down for more than " +
+          "unregisterIfStillDownAfter ms, it will disappear from the hub. Default is 1min.")
+  private long unregisterIfStillDownAfter = 60000;
+
+  @Parameter(names = "-downPollingLimit",
+          description = "node is marked as down after downPollingLimit alive checks. Default 2.")
+  private long downPollingLimit = 2;
+
+  @Parameter(names = "-nodeStatusCheckTimeout", description = "Connection and socket timeout which is used for " +
+          "node alive check. Default 0 and for connection timeout - 120sec, for socket timeout - 3hours")
+  private long nodeStatusCheckTimeout = 0;
+
+  @Parameter(names = "-noWebviewApp",
+             description = "If you don't want selendroid to auto-extract and have 'AndroidDriver' (webview only app) available.")
+  private boolean noWebViewApp = false;
+
+  @Parameter(names = "-noClearData",
+             description = "When you quit the app, shell pm clear will not be called with this option specified.")
+  private boolean noClearData = false;
+
+  @Parameter(
+      description = "maximum session duration in seconds. Session will be forcefully terminated if it takes longer.",
+      names = "-sessionTimeout")
+  private int sessionTimeoutSeconds = 30 * 60; // 30 minutes
+
+  @Parameter(names = "-forceReinstall",
+             description = "Forces Selendroid Server and the app under test to be reinstalled (for Selendroid developers)")
+  private boolean forceReinstall = false;
+
+  @Parameter(names = "-logLevel", converter = LogLevelConverter.class,
+             description = "Specifies the log level of selendroid. Available values are: ERROR, WARNING, INFO, DEBUG and VERBOSE.")
+  private LogLevelEnum logLevel = LogLevelEnum.ERROR;
+
+  @Parameter(names = "-deviceLog",
+             description = "Specifies whether or not adb logging should be enabled for the device running the test",
+             arity = 1)
+  private boolean deviceLog = true;
+
+  @Parameter(description = "Maximum time in milliseconds to wait for the selendroid-server to come up on the device",
+      names = "-serverStartTimeout")
+  private long serverStartTimeout = 20000;
+
+  @Parameter(description = "Time in milliseconds to wait between attempts to check if the selendroid-server has come up on the device.",
+      names = "-serverStartPollingInterval")
+  private long serverStartPollingInterval = FluentWait.FIVE_HUNDRED_MILLIS.in(TimeUnit.MILLISECONDS);
+
+  @Parameter(names = {"-h", "--help"}, description = "Prints usage instructions to the terminal")
+  private boolean printHelp = false;
+
+  @Parameter(names="-serverStartRetries",
+             description="Maximum amount of times the starting of the selendroid-server on the device will be retried")
+  private int serverStartRetries = 5;
+
+  @Parameter(names = "-folder", description = "The folder which contains Android applications under test. This folder will monitor and add new apps to the apps store during the lifetime of the selendroid node.")
+  private String folder = null;
+
+  @Parameter(names = "-deleteTmpFiles", description = "Deletes temporary files created by the Selendroid Server.")
+  private boolean deleteTmpFiles = true;
+
+  @Parameter(names = "-useJUnitBootstrap", description = "Use instrumentation that extends AdroidJUnitRunner")
+  private boolean useJUnitBootstrap = false;
+
+  @Parameter(names = "-adbHome", description = "Specify path to adb installation. If not specified, it will default to ANDROID_HOME/platform-tools")
+  private String adbHome = null;
+
+  @Parameter(names = "-androidHome", description = "Specify path to android sdk installation, if not specified it will be read from the ANDROID_HOME env var")
+  private String androidHome = null;
+
+  @Parameter(names = "-androidSdkVersion", description = "Which Android SDK version to use to build the selendroid-server")
+  private String androidSdkVersion = null;
+
+  @Parameter(names = "-buildToolsVersion", description = "Which version of the android build-tools to use")
+  private String buildToolsVersion = null;
+
+
+  @Parameter(names ="-avdManager", description = "Absolute path to avdmanager command line utility")
+  private String avdManagerHome = null;
+
+  public String getAvdManager() {
+    return avdManagerHome;
+  }
+
+  public void setAvdManagerHome(String avdManagerHome) {
+    this.avdManagerHome = avdManagerHome;
+  }
+
+  public void setKeystore(String keystore) {
+    this.keystore = keystore;
+  }
+
+  public String getKeystore() {
+    return keystore;
+  }
+
+  public void setKeystorePassword(String keystorePassword) {
+	    this.keystorePassword = keystorePassword;
+	  }
+
+  public String getKeystorePassword() {
+	    return keystorePassword;
+	  }
+
+  public void setKeystoreAlias(String keystoreAlias) {
+	    this.keystoreAlias = keystoreAlias;
+	  }
+
+  public String getKeystoreAlias() {
+	    return keystoreAlias;
+	  }
+
+
+  public void setSelendroidServerPort(int selendroidServerPort) {
+    this.selendroidServerPort = selendroidServerPort;
+  }
+
+  public int getSelendroidServerPort() {
+    return selendroidServerPort;
+  }
+
+  public void addSupportedApp(String appAbsolutPath) {
+    supportedApps.add(appAbsolutPath);
+  }
+
+  public List<String> getSupportedApps() {
+    return supportedApps;
+  }
+
+  public static SelendroidConfiguration create(String[] args) {
+    SelendroidConfiguration res = new SelendroidConfiguration();
+    new JCommander(res).parse(args);
+    return res;
+  }
+
+  public void setPort(int port) {
+    this.port = port;
+  }
+
+  public int getPort() {
+    return this.port;
+  }
+
+  public void setEmulatorPort(int port) {
+    emulatorPort = port;
+  }
+
+  public int getEmulatorPort() {
+    return emulatorPort;
+  }
+
+  public long getTimeoutEmulatorStart() {
+    return timeoutEmulatorStart;
+  }
+
+  public void setTimeoutEmulatorStart(long timeoutEmulatorStart) {
+    this.timeoutEmulatorStart = timeoutEmulatorStart;
+  }
+
+  public boolean isDeviceScreenshot() {
+    return deviceScreenshot;
+  }
+
+  public void setDeviceScreenshot(boolean deviceScreenshot) {
+    this.deviceScreenshot = deviceScreenshot;
+  }
+
+  public String getRegistrationUrl() {
+    return registrationUrl;
+  }
+
+  public void setRegistrationUrl(String registrationUrl) {
+    this.registrationUrl = registrationUrl;
+  }
+
+  public String getProxy() {
+    return proxy;
+  }
+
+  public void setProxy(String proxy) {
+    this.proxy = proxy;
+  }
+
+  public String getServerHost() {
+    return serverHost;
+  }
+
+  public void setServerHost(String serverHost) {
+    this.serverHost = serverHost;
+  }
+
+  public String getEmulatorOptions() {
+    return emulatorOptions;
+  }
+
+  public void setEmulatorOptions(String qemu) {
+    this.emulatorOptions = qemu;
+  }
+
+  public boolean shouldKeepAdbAlive() {
+    return keepAdbAlive;
+  }
+
+  public void setShouldKeepAdbAlive(boolean keepAdbAlive) {
+    this.keepAdbAlive = keepAdbAlive;
+  }
+
+  public boolean isNoWebViewApp() {
+    return noWebViewApp;
+  }
+
+  public void setNoWebViewApp(boolean noWebViewApp) {
+    this.noWebViewApp = noWebViewApp;
+  }
+
+  public boolean isNoClearData() {
+    return noClearData;
+  }
+
+  public void setNoClearData(boolean noClearData) {
+    this.noClearData = noClearData;
+  }
+
+  public int getSessionTimeoutMillis() {
+    return sessionTimeoutSeconds * 1000;
+  }
+
+  public void setSessionTimeoutSeconds(int sessionTimeoutSeconds) {
+    this.sessionTimeoutSeconds = sessionTimeoutSeconds;
+  }
+
+  public boolean isForceReinstall() {
+    return forceReinstall;
+  }
+
+  public void setForceReinstall(boolean forceReinstall) {
+    this.forceReinstall = forceReinstall;
+  }
+
+  public LogLevelEnum getLogLevel() {
+    return logLevel;
+  }
+
+  public void setLogLevel(LogLevelEnum logLevel) {
+    this.logLevel = logLevel;
+  }
+
+  public boolean isDeviceLog() {
+    return deviceLog;
+  }
+
+  public void setDeviceLog(boolean deviceLog) {
+    this.deviceLog = deviceLog;
+  }
+
+  public long getServerStartTimeout() {
+    return serverStartTimeout;
+  }
+
+  public void setServerStartTimeout(long serverStartTimeout) {
+    this.serverStartTimeout = serverStartTimeout;
+  }
+
+  public long getServerStartPollingInterval() {
+    return serverStartPollingInterval;
+  }
+
+  public void setServerStartPollingInterval(long serverStartPollingInterval) {
+    this.serverStartPollingInterval = serverStartPollingInterval;
+  }
+
+  public int getServerStartRetries() {
+    return serverStartRetries;
+  }
+
+  public void setServerStartRetries(int serverStartRetries) {
+    this.serverStartRetries = serverStartRetries;
+  }
+
+  public boolean isPrintHelp() {
+    return printHelp;
+  }
+
+  public void setPrintHelp(boolean printHelp) {
+    this.printHelp = printHelp;
+  }
+
+  public boolean isKeepEmulator() {
+    return keepEmulator;
+  }
+
+  public void setKeepEmulator(boolean keepEmulator) {
+    this.keepEmulator = keepEmulator;
+  }
+
+  @Override
+  public String toString() {
+    return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
+  }
+
+  public int getMaxSession() {
+    return maxSession;
+  }
+
+  public void setMaxSession(int maxSession) {
+    this.maxSession = maxSession;
+  }
+
+  public int getMaxInstances() {
+    return maxInstances;
+  }
+
+  public void setMaxInstances(int maxInstances) {
+    this.maxInstances = maxInstances;
+  }
+
+  public String getAppFolderToMonitor() {
+    return folder;
+  }
+
+  public void setAppFolderToMonitor(String path) {
+    folder = path;
+  }
+
+  public boolean isDeleteTmpFiles() {
+    return deleteTmpFiles;
+  }
+
+  public void setDeleteTmpFiles(boolean deleteTmpFiles){
+    this.deleteTmpFiles = deleteTmpFiles;
+  }
+
+  /**
+   * @return {@code true} if Selendroid standalone should run in grid mode.
+   */
+  public boolean isGrid() {
+    return !StringUtils.isBlank(getRegistrationUrl()) && !StringUtils.isBlank(getServerHost());
+  }
+
+  public long getRegisterCycle() {
+    return registerCycle;
+  }
+
+  public void setRegisterCycle(long registerCycle) {
+    this.registerCycle = registerCycle;
+  }
+
+  public long getCleanupCycle() {
+    return cleanupCycle;
+  }
+
+  public void setCleanupCycle(long cleanupCycle) {
+    this.cleanupCycle = cleanupCycle;
+  }
+
+  public long getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(long timeout) {
+    this.timeout = timeout;
+  }
+
+  public long getNodePolling() {
+    return nodePolling;
+  }
+
+  public void setNodePolling(long nodePolling) {
+    this.nodePolling = nodePolling;
+  }
+
+  public long getUnregisterIfStillDownAfter() {
+    return unregisterIfStillDownAfter;
+  }
+
+  public void setUnregisterIfStillDownAfter(long unregisterIfStillDownAfter) {
+    this.unregisterIfStillDownAfter = unregisterIfStillDownAfter;
+  }
+
+  public long getDownPollingLimit() {
+    return downPollingLimit;
+  }
+
+  public void setDownPollingLimit(long downPollingLimit) {
+    this.downPollingLimit = downPollingLimit;
+  }
+
+  public long getNodeStatusCheckTimeout() {
+    return nodeStatusCheckTimeout;
+  }
+
+  public void setNodeStatusCheckTimeout(long nodeStatusCheckTimeout) {
+    this.nodeStatusCheckTimeout = nodeStatusCheckTimeout;
+  }
+
+  public boolean isReuseSelendroidServerPort() {
+    return reuseSelendroidServerPort;
+  }
+
+  public void setReuseSelendroidServerPort(boolean reuseSelendroidServerPort) {
+    this.reuseSelendroidServerPort = reuseSelendroidServerPort;
+  }
+
+  public boolean isUseJUnitBootstrap() {
+    return useJUnitBootstrap;
+  }
+
+  public void setUseJUnitBootstrap(boolean useJUnitBootstrap) {
+    this.useJUnitBootstrap = useJUnitBootstrap;
+  }
+
+  public String getAndroidHome() {
+    return androidHome;
+  }
+
+  public void setAndroidHome(String androidHome) {
+    this.androidHome = androidHome;
+  }
+
+  public String getAdbHome() {
+    return adbHome;
+  }
+
+  public void setAdbHome(String adbHome) {
+    this.adbHome = adbHome;
+  }
+
+  public String getAndroidSdkVersion() {
+    return androidSdkVersion;
+  }
+
+  public void setAndroidSdkVersion(String androidSdkVersion) {
+    this.androidSdkVersion = androidSdkVersion;
+  }
+
+  public String getBuildToolsVersion() {
+    return buildToolsVersion;
+  }
+
+  public void setBuildToolsVersion(String buildToolsVersion) {
+    this.buildToolsVersion = buildToolsVersion;
+  }
+}

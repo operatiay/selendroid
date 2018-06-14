@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,6 +18,7 @@ import io.selendroid.support.BaseAndroidTest;
 import java.util.List;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
@@ -183,16 +184,16 @@ public class NativeElementFindingTest extends BaseAndroidTest {
     openStartActivity();
     String buttonText = "EN Button";
     WebElement clickMe = driver().findElement(By.className("android.widget.Button"));
-    Assert.assertEquals(clickMe.getText(), buttonText);
+    Assert.assertEquals(buttonText, clickMe.getText());
   }
 
   @Test
   public void shouldFindButtonsByClass() throws Exception {
     openStartActivity();
-    String buttonText = "Show Progress Bar for a while";
+    String buttonText = "Display text view";
     List<WebElement> elements = driver().findElements(By.className("android.widget.Button"));
-    Assert.assertEquals(7, elements.size());
-    Assert.assertEquals(elements.get(1).getText(), buttonText);
+    Assert.assertEquals(9, elements.size());
+    Assert.assertEquals(buttonText, elements.get(3).getText());
   }
 
   @Test()
@@ -221,16 +222,17 @@ public class NativeElementFindingTest extends BaseAndroidTest {
     openStartActivity();
     String buttonText = "EN Button";
     WebElement clickMe = driver().findElement(By.tagName("Button"));
-    Assert.assertEquals(clickMe.getText(), buttonText);
+
+    Assert.assertEquals(buttonText, clickMe.getText());
   }
 
   @Test
   public void shouldFindButtonsByTagName() throws Exception {
     openStartActivity();
-    String buttonText = "EN Button";
+    String buttonText = "Show Progress Bar for a while";
     List<WebElement> elements = driver().findElements(By.tagName("Button"));
-    Assert.assertEquals(6, elements.size());
-    Assert.assertEquals(elements.get(0).getText(), buttonText);
+    Assert.assertEquals(8, elements.size());
+    Assert.assertEquals(buttonText, elements.get(1).getText());
   }
 
   @Test()
@@ -288,6 +290,7 @@ public class NativeElementFindingTest extends BaseAndroidTest {
 
 
   @Test()
+  @Ignore("This is currently broken. See https://github.com/selendroid/selendroid/issues/800")
   public void shouldNotFindElementByIdFromPreviousActivity() {
     openStartActivity();
     driver().findElement(By.id("startUserRegistration")).click();
@@ -337,5 +340,13 @@ public class NativeElementFindingTest extends BaseAndroidTest {
     driver().findElement(By.id("visibleButtonTest")).click();
     Thread.sleep(1000);
     Assert.assertEquals(textview.isDisplayed(), true);
+  }
+  
+  @Test()
+  public void shouldNotFindDuplicateElements() throws Exception {
+    openStartActivity();
+    driver().findElement(By.id("topLevelElementTest")).click();
+    List<WebElement> elements = driver().findElements(By.id("focusedText"));
+    Assert.assertEquals(elements.size(), 1);
   }
 }

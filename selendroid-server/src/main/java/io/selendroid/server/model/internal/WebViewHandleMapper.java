@@ -15,10 +15,11 @@
 package io.selendroid.server.model.internal;
 
 import android.webkit.WebView;
-import io.selendroid.ServerInstrumentation;
-import io.selendroid.android.ViewHierarchyAnalyzer;
-import io.selendroid.android.WindowType;
-import io.selendroid.exceptions.NoSuchContextException;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.ServerInstrumentationProvider;
+import io.selendroid.server.android.ViewHierarchyAnalyzer;
+import io.selendroid.server.android.WindowType;
+import io.selendroid.server.common.exceptions.NoSuchContextException;
 import io.selendroid.server.model.DefaultSelendroidDriver;
 
 import java.util.HashSet;
@@ -67,7 +68,7 @@ public class WebViewHandleMapper {
 
     // Retry logic (using Implicit Wait)
     while (webviews == null
-            && (System.currentTimeMillis() - start <= ServerInstrumentation.getInstance()
+            && (System.currentTimeMillis() - start <= ServerInstrumentationProvider.getServerInstrumentationInstance()
             .getAndroidWait().getTimeoutInMillis())) {
       DefaultSelendroidDriver.sleepQuietly(500);
       webviews = ViewHierarchyAnalyzer.getDefaultInstance().findWebViews();

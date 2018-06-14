@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,7 +13,7 @@
  */
 package io.selendroid.server.model;
 
-import io.selendroid.android.internal.Dimension;
+import io.selendroid.server.android.internal.Dimension;
 
 import java.util.List;
 import java.util.Set;
@@ -98,5 +98,9 @@ public interface SelendroidDriver {
 
   public void setAsyncTimeout(long timeout);
 
+  public void setPageLoadTimeout(long timeout);
+
   public boolean isAirplaneMode();
+  
+  public void roll(int dimensionX, int dimensionY);
 }

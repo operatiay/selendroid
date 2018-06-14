@@ -13,11 +13,11 @@
  */
 package io.selendroid.server.model.internal.execute_native;
 
-import io.selendroid.ServerInstrumentation;
+import io.selendroid.server.ServerInstrumentation;
 import io.selendroid.server.model.AndroidElement;
 import io.selendroid.server.model.AndroidNativeElement;
 import io.selendroid.server.model.KnownElements;
-import io.selendroid.util.SelendroidLogger;
+import io.selendroid.server.util.SelendroidLogger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,7 +26,10 @@ import android.content.Context;
 import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
-
+/**
+ * @deprecated Please use new implemented extension mechanism
+ * @see <a href="https://github.com/selendroid/selendroid-extension">extension mechanism Docu</a>
+ */
 public class IsElementDisplayedInViewport implements NativeExecuteScript {
   private KnownElements knownElements;
   private ServerInstrumentation instrumentation;
@@ -49,7 +52,7 @@ public class IsElementDisplayedInViewport implements NativeExecuteScript {
       }
       return false;
     } catch (JSONException e) {
-      e.printStackTrace();
+      SelendroidLogger.error("Cannot check if element is displayed in viewport", e);
       return false;
     }
   }
@@ -64,9 +67,9 @@ public class IsElementDisplayedInViewport implements NativeExecuteScript {
     if (coordinates[1] + view.getHeight() < 0) return false;
 
     if (width == 0 || height == 0) {
-      if (instrumentation.getContext() == null) return false;
+      if (instrumentation.getInstrumentation().getContext() == null) return false;
       Display display =
-          ((WindowManager) instrumentation.getContext().getSystemService(Context.WINDOW_SERVICE))
+          ((WindowManager) instrumentation.getInstrumentation().getContext().getSystemService(Context.WINDOW_SERVICE))
               .getDefaultDisplay();
       try {
         android.graphics.Point screenSize = new android.graphics.Point();

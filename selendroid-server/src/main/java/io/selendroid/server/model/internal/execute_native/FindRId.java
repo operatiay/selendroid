@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,12 +13,18 @@
  */
 package io.selendroid.server.model.internal.execute_native;
 
-import io.selendroid.ServerInstrumentation;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.util.SelendroidLogger;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.lang.reflect.Field;
 
+/**
+ * @deprecated Please use new implemented extension mechanism
+ * @see <a href="https://github.com/selendroid/selendroid-extension">extension mechanism Docu</a> 
+ */
 public class FindRId implements NativeExecuteScript {
 
   private ServerInstrumentation serverInstrumentation;
@@ -31,11 +37,11 @@ public class FindRId implements NativeExecuteScript {
   public Object executeScript(JSONArray args) {
     Class rClazz;
     try {
-      rClazz = serverInstrumentation.getTargetContext().getClassLoader().loadClass(
-          serverInstrumentation.getTargetContext().getPackageName() +".R$id"
+      rClazz = serverInstrumentation.getInstrumentation().getTargetContext().getClassLoader().loadClass(
+          serverInstrumentation.getInstrumentation().getTargetContext().getPackageName() +".R$id"
       );
     } catch (ClassNotFoundException e) {
-      e.printStackTrace();
+      SelendroidLogger.error("Cannot find id", e);
       return "";
     }
     String using = null;

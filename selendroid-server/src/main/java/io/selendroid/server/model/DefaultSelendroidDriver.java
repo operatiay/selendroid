@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -24,30 +24,20 @@ import android.provider.Settings;
 import android.view.Display;
 import android.view.View;
 import android.webkit.WebView;
-import io.selendroid.ServerInstrumentation;
-import io.selendroid.android.AndroidTouchScreen;
-import io.selendroid.android.AndroidWait;
-import io.selendroid.android.InstrumentedKeySender;
-import io.selendroid.android.KeySender;
-import io.selendroid.android.ViewHierarchyAnalyzer;
-import io.selendroid.android.WindowType;
-import io.selendroid.android.internal.Dimension;
-import io.selendroid.exceptions.NoSuchElementException;
-import io.selendroid.exceptions.SelendroidException;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.android.*;
+import io.selendroid.server.android.internal.Dimension;
+import io.selendroid.server.common.exceptions.NoSuchElementException;
+import io.selendroid.server.common.exceptions.SelendroidException;
+import io.selendroid.server.common.utils.CallLogEntry;
 import io.selendroid.server.inspector.TreeUtil;
 import io.selendroid.server.model.internal.AbstractNativeElementContext;
 import io.selendroid.server.model.internal.AbstractWebElementContext;
 import io.selendroid.server.model.internal.WebViewHandleMapper;
-import io.selendroid.server.model.internal.execute_native.FindElementByAndroidTag;
-import io.selendroid.server.model.internal.execute_native.FindRId;
-import io.selendroid.server.model.internal.execute_native.GetL10nKeyTranslation;
-import io.selendroid.server.model.internal.execute_native.InvokeMenuAction;
-import io.selendroid.server.model.internal.execute_native.IsElementDisplayedInViewport;
-import io.selendroid.server.model.internal.execute_native.NativeExecuteScript;
-import io.selendroid.server.model.internal.execute_native.TwoPointerGestureAction;
+import io.selendroid.server.model.internal.execute_native.*;
 import io.selendroid.server.model.js.AndroidAtoms;
-import io.selendroid.util.Preconditions;
-import io.selendroid.util.SelendroidLogger;
+import io.selendroid.server.util.Preconditions;
+import io.selendroid.server.util.SelendroidLogger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -55,16 +45,7 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 
 public class DefaultSelendroidDriver implements SelendroidDriver {
@@ -86,6 +67,7 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
   private KeySender keySender = null;
   private SelendroidNativeDriver selendroidNativeDriver = null;
   private SelendroidWebDriver selendroidWebDriver = null;
+  private TrackBall trackBall = null;
   private String activeWindowType = null;
   private long scriptTimeout = 0L;
 
@@ -95,7 +77,7 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
 
   public DefaultSelendroidDriver(ServerInstrumentation instrumentation) {
     serverInstrumentation = instrumentation;
-    keySender = new InstrumentedKeySender(serverInstrumentation);
+    keySender = new InstrumentedKeySender(serverInstrumentation.getInstrumentation());
   }
 
   /*
@@ -181,10 +163,9 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
 
     JSONObject copy;
     try {
-      if (session.getCapabilities().names() != null) {
-        copy =
-            new JSONObject(session.getCapabilities(), session.getCapabilities().names().join(",")
-                .split(","));
+      JSONObject capabilities = session.getCapabilities();
+      if (capabilities != null) {
+        copy = new JSONObject(capabilities.toString());
       } else {
         copy = new JSONObject();
       }
@@ -261,7 +242,7 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
     long end =
         System.currentTimeMillis() + serverInstrumentation.getAndroidWait().getTimeoutInMillis();
     final byte[][] rawPng = new byte[1][1];
-    ServerInstrumentation.getInstance().getCurrentActivity().runOnUiThread(new Runnable() {
+    serverInstrumentation.getCurrentActivity().runOnUiThread(new Runnable() {
       public void run() {
         synchronized (syncObject) {
           Display display =
@@ -396,7 +377,6 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
         new FindElementByAndroidTag(session.getKnownElements(), serverInstrumentation, keySender));
     nativeExecuteScriptMap.put("isElementDisplayedInViewport", new IsElementDisplayedInViewport(
         session.getKnownElements(), serverInstrumentation));
-   nativeExecuteScriptMap.put("TwoPointerGesture", new TwoPointerGestureAction((AndroidTouchScreen) selendroidNativeDriver.getTouch()));
 
     return session.getSessionId();
   }
@@ -443,9 +423,6 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
         return new ArrayList<AndroidElement>();
       }
       elements = replyElements((JSONArray) result);
-      if (elements == null || elements.isEmpty()) {
-        throw new NoSuchElementException("The element was not found.");
-      }
       return elements;
     }
   }
@@ -461,12 +438,24 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
     }
 
     @Override
+    protected View getSearchRoot() {
+      return viewAnalyzer.getRecentDecorView();
+    }
+
+    @Override
     protected List<View> getTopLevelViews() {
       List<View> views = new ArrayList<View>();
       views.addAll(viewAnalyzer.getTopLevelViews());
       if (instrumentation.getCurrentActivity() != null
           && instrumentation.getCurrentActivity().getCurrentFocus() != null) {
-        views.add(instrumentation.getCurrentActivity().getCurrentFocus());
+        // Make sure the focused view is not a child of an already added top level view
+        View focusedView = instrumentation.getCurrentActivity().getCurrentFocus();
+        View focusedRoot = focusedView.getRootView();
+        boolean topLevel = true;
+        for (View view : views){
+          topLevel = topLevel && !focusedRoot.equals(view);
+        }
+        if (topLevel) views.add(focusedView);
       }
       // sort them to have most recently drawn view show up first
       Collections.sort(views, new Comparator<View>() {
@@ -549,17 +538,17 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
 
   public void rotate(final ScreenOrientation orientation) {
     final Activity activity = serverInstrumentation.getCurrentActivity();
-    final int screenOrientation = getAndroidScreenOrientation(orientation);
-    if (activity != null) {
-      activity.runOnUiThread(new Runnable() {
-
-        @Override
-        public void run() {
-          activity.setRequestedOrientation(screenOrientation);
-        }
-      });
-      serverInstrumentation.waitForIdleSync();
+    if (activity == null) {
+      return;
     }
+    final int screenOrientation = getAndroidScreenOrientation(orientation);
+    activity.runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        activity.setRequestedOrientation(screenOrientation);
+      }
+    });
+    serverInstrumentation.getInstrumentation().waitForIdleSync();
   }
 
   private int getAndroidScreenOrientation(ScreenOrientation orientation) {
@@ -669,6 +658,9 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
   }
 
   public void setFrameContext(Object obj) throws JSONException {
+    if (selendroidWebDriver == null) {
+      return;
+    }
     SelendroidLogger.info("setting frame context: " + obj);
     if (obj.equals(null)) {
       selendroidWebDriver.switchToDefaultContent();
@@ -769,9 +761,44 @@ public class DefaultSelendroidDriver implements SelendroidDriver {
     }
   }
 
+  public void setPageLoadTimeout(long timeout) {
+    if (selendroidWebDriver != null) {
+      selendroidWebDriver.setPageLoadTimeout(timeout);
+    }
+  }
+
   public boolean isAirplaneMode() {
     return Settings.System.getInt(
-        ServerInstrumentation.getInstance().getCurrentActivity().getContentResolver(),
+        serverInstrumentation.getCurrentActivity().getContentResolver(),
         Settings.System.AIRPLANE_MODE_ON, 0) == 1;
   }
+
+  public void backgroundApp() {
+    serverInstrumentation.backgroundActivity();
+  }
+
+  public void resumeApp() {
+    serverInstrumentation.resumeActivity();
+  }
+
+  public void addCallLog(CallLogEntry log) {
+	serverInstrumentation.addCallLog(log);
+  }
+  
+  public List<CallLogEntry> readCallLog() {
+    return serverInstrumentation.readCallLog();
+  }
+  
+  private TrackBall getTrackBall() {
+	  if (trackBall == null) {
+		  trackBall = new AndroidTrackBall(serverInstrumentation);
+	  }
+	  return trackBall;
+  }
+
+  @Override
+  public void roll(int dimensionX, int dimensionY) {
+    getTrackBall().roll(dimensionX, dimensionY);
+  }
+
 }

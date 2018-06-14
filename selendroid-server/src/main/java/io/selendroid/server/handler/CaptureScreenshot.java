@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,26 +13,26 @@
  */
 package io.selendroid.server.handler;
 
-import io.selendroid.android.internal.Base64Encoder;
 import org.json.JSONException;
-import io.selendroid.server.RequestHandler;
-import io.selendroid.server.Response;
-import io.selendroid.server.SelendroidResponse;
-import io.selendroid.util.SelendroidLogger;
-import org.webbitserver.HttpRequest;
 
-public class CaptureScreenshot extends RequestHandler {
+import io.selendroid.server.android.internal.Base64Encoder;
+import io.selendroid.server.common.Response;
+import io.selendroid.server.common.SelendroidResponse;
+import io.selendroid.server.common.http.HttpRequest;
+import io.selendroid.server.util.SelendroidLogger;
+
+public class CaptureScreenshot extends SafeRequestHandler {
 
   public CaptureScreenshot(String mappedUri) {
     super(mappedUri);
   }
 
   @Override
-  public Response handle(HttpRequest request) throws JSONException{
+  public Response safeHandle(HttpRequest request) throws JSONException {
     SelendroidLogger.info("take screenshot command");
     byte[] rawPng = getSelendroidDriver(request).takeScreenshot();
     String base64Png = new Base64Encoder().encode(rawPng);
-    
+
     return new SelendroidResponse(getSessionId(request), base64Png);
   }
 }

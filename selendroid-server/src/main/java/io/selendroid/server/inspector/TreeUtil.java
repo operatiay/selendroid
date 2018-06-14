@@ -13,7 +13,7 @@
  */
 package io.selendroid.server.inspector;
 
-import io.selendroid.exceptions.SelendroidException;
+import io.selendroid.server.common.exceptions.SelendroidException;
 import io.selendroid.server.model.internal.JsonXmlUtil;
 
 import java.io.StringWriter;
@@ -51,6 +51,7 @@ public class TreeUtil {
     metadata.put("l10n", from.getJSONObject("l10n"));
     metadata.put("shown", from.getBoolean("shown"));
     metadata.put("source", from.optString("source"));
+    metadata.put("error", from.optString("error"));
 
     node.put("metadata", metadata);
     JSONObject rect = new JSONObject();

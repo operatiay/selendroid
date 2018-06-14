@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 eBay Software Foundation and selendroid committers.
+ * Copyright 2012-2014 eBay Software Foundation and selendroid committers.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,37 +13,40 @@
  */
 package io.selendroid.server.model;
 
-
-import io.selendroid.ServerInstrumentation;
-import io.selendroid.android.AndroidWait;
-import io.selendroid.android.KeySender;
-import io.selendroid.android.ViewHierarchyAnalyzer;
-import io.selendroid.android.internal.Dimension;
-import io.selendroid.android.internal.Point;
-import io.selendroid.exceptions.ElementNotVisibleException;
-import io.selendroid.exceptions.NoSuchElementAttributeException;
-import io.selendroid.exceptions.NoSuchElementException;
-import io.selendroid.exceptions.SelendroidException;
-import io.selendroid.exceptions.TimeoutException;
+import android.app.Activity;
+import android.view.ViewParent;
+import io.selendroid.server.ServerInstrumentation;
+import io.selendroid.server.android.AndroidWait;
+import io.selendroid.server.android.KeySender;
+import io.selendroid.server.android.ViewHierarchyAnalyzer;
+import io.selendroid.server.android.internal.Dimension;
+import io.selendroid.server.android.internal.Point;
+import io.selendroid.server.common.exceptions.ElementNotVisibleException;
+import io.selendroid.server.common.exceptions.NoSuchElementAttributeException;
+import io.selendroid.server.common.exceptions.NoSuchElementException;
+import io.selendroid.server.common.exceptions.SelendroidException;
+import io.selendroid.server.common.exceptions.TimeoutException;
 import io.selendroid.server.model.interactions.AndroidCoordinates;
 import io.selendroid.server.model.interactions.Coordinates;
 import io.selendroid.server.model.internal.AbstractNativeElementContext;
-import io.selendroid.util.Function;
-import io.selendroid.util.Preconditions;
-import io.selendroid.util.SelendroidLogger;
+import io.selendroid.server.util.Function;
+import io.selendroid.server.util.Preconditions;
+import io.selendroid.server.util.SelendroidLogger;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.webkit.JsResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -54,8 +57,8 @@ import android.widget.TextView;
 public class AndroidNativeElement implements AndroidElement {
   // TODO revisit
   protected static final long DURATION_OF_LONG_PRESS = 750L;// (long)
-                                                            // (ViewConfiguration.getLongPressTimeout()
-                                                            // * 1.5f);
+  // (ViewConfiguration.getLongPressTimeout()
+  // * 1.5f);
   private WeakReference<View> viewRef;
   private Collection<AndroidElement> children = new LinkedHashSet<AndroidElement>();
   private AndroidElement parent;
@@ -71,7 +74,7 @@ public class AndroidNativeElement implements AndroidElement {
   private final String id;
 
   public AndroidNativeElement(View view, ServerInstrumentation instrumentation, KeySender keys,
-      KnownElements ke) {
+                              KnownElements ke) {
     Preconditions.checkNotNull(view);
     this.viewRef = new WeakReference<View>(view);
     hashCode = view.hashCode() + 31;
@@ -90,17 +93,87 @@ public class AndroidNativeElement implements AndroidElement {
   }
 
   public boolean isDisplayed() {
-    boolean hasWindowFocus = getView().hasWindowFocus();
-    boolean enabled = getView().isEnabled();
-    int width = getView().getWidth();
-    int height = getView().getHeight();
-    // In the past we used `getView().isShown()` to identify if the element
-    // is displayed. It seems like that it is better to look just at the
-    // visibility of the view instead of verifying the ancestors as well.
-    boolean isElementDisplayed = (View.VISIBLE == getView().getVisibility()) && getView().isShown();
+    View view = getView();
+    boolean hasWindowFocus = view.hasWindowFocus();
+    int width = view.getWidth();
+    int height = view.getHeight();
+    int visibility = view.getVisibility();
+    boolean isVisible = (View.VISIBLE == visibility);
 
+    // Check visibility of the view and its parents as well.
+    // This is more reliable when transitions between activities are in progress.
+    boolean isShown = view.isShown();
 
-    return hasWindowFocus && enabled && isElementDisplayed && (width > 0) && (height > 0);
+    boolean isDisplayed =
+        hasWindowFocus && isVisible && isShown && (width > 0) && (height > 0);
+
+    if (!isDisplayed) {
+      Activity activity = instrumentation.getCurrentActivity();
+      View focusedView = activity.getCurrentFocus();
+      String displayCheckFailureMessage =
+          String.format(
+              "Display check failed\n" +
+                  "for view: %s\n" +
+                  "isVisible: %b\nvisibility: %d\nisShown: %b\nhasWindowFocus: %b\n" +
+                  "width: %d\nheight: %d\ncurrent activity: %s\nfocused view: %s",
+              view, isVisible, visibility, isShown, hasWindowFocus,
+              width, height, activity, focusedView);
+      SelendroidLogger.debug(displayCheckFailureMessage);
+      if (!isShown) {
+        logIsShownCheckFailure(view);
+      }
+      // Check the view belongs to the same view hierarchy as the view with current window focus.
+      // If true, this usually means a system alert dialog is rendered on top of the view
+      // (typically this is an app crash dialog).
+      if (!hasWindowFocus) {
+        if (activity != null && focusedView != null) {
+          if (view.getRootView() == focusedView.getRootView()) {
+             SelendroidLogger.debug("hasWindowFocus() check failed. " +
+                    "This usually means the view is covered by a system dialog.");
+          }
+        }
+      }
+    }
+
+    return isDisplayed;
+  }
+
+  /**
+   * If view.isShown() == false, logs why exactly this evaluates to false.
+   * Copied from Android's implementation of View.isShown().
+   */
+  private void logIsShownCheckFailure(View view) {
+    try {
+      SelendroidLogger.debug("Display check failed because View.isShown() == false");
+      View current = view;
+      do {
+        if ((current.getVisibility()) != View.VISIBLE) {
+          SelendroidLogger.debug(String.format(
+              "isShown: View %s is not visible because its ancestor %s has visibility %d",
+              view, current, current.getVisibility()));
+          break;
+        }
+        ViewParent parent = current.getParent();
+        if (parent == null) {
+          SelendroidLogger.debug(String.format(
+              "isShown: View %s is not visible because its ancestor %s has no parent " +
+                  "(it is not attached to view root): ",
+              view, current));
+          break;
+        }
+        if (!(parent instanceof View)) {
+          // The only case where View.isShown() returns true:
+          // The view needs to have an ancestor that is not a View and all ancestors on the way up have to
+          // be visible.
+          break;
+        }
+        current = (View) parent;
+      } while (current != null);
+      SelendroidLogger.debug(String.format("View %s is not visible", view));
+    } catch (Exception e) {
+      // Don't let an exception in debug printing crash the caller
+      SelendroidLogger.error("isShown() debug printing failed", e);
+    }
   }
 
   private void waitUntilIsDisplayed() {
@@ -124,7 +197,7 @@ public class AndroidNativeElement implements AndroidElement {
     final int left = leftTopLocation.x;
     final int top = leftTopLocation.y;
 
-    instrumentation.runOnMainSync(new Runnable() {
+    instrumentation.getInstrumentation().runOnMainSync(new Runnable() {
       @Override
       public void run() {
         synchronized (syncObject) {
@@ -142,8 +215,7 @@ public class AndroidNativeElement implements AndroidElement {
         try {
           syncObject.wait(AndroidWait.DEFAULT_SLEEP_INTERVAL);
         } catch (InterruptedException e) {
-          e.printStackTrace();
-          throw new SelendroidException(e);
+          Thread.currentThread().interrupt();
         }
       }
     }
@@ -162,7 +234,7 @@ public class AndroidNativeElement implements AndroidElement {
 
   private void requestFocus() {
     final View viewview = getView();
-    instrumentation.runOnMainSync(new Runnable() {
+    instrumentation.getInstrumentation().runOnMainSync(new Runnable() {
       @Override
       public void run() {
         viewview.requestFocus();
@@ -176,7 +248,7 @@ public class AndroidNativeElement implements AndroidElement {
     if (getView() instanceof TextView) {
       return ((TextView) getView()).getText().toString();
     }
-    System.err.println("not supported elment for getting the text: "
+    SelendroidLogger.warning("Element does not support getText(): "
         + getView().getClass().getSimpleName());
     return null;
   }
@@ -185,22 +257,84 @@ public class AndroidNativeElement implements AndroidElement {
   public void click() {
     waitUntilIsDisplayed();
     scrollIntoScreenIfNeeded();
-    try {
-      // is needed for recalculation of location
-      Thread.sleep(300);
-    } catch (InterruptedException e) {}
-    int[] xy = new int[2];
-    getView().getLocationOnScreen(xy);
-    final int viewWidth = getView().getWidth();
-    final int viewHeight = getView().getHeight();
-    final float x = xy[0] + (viewWidth / 2.0f);
-    float y = xy[1] + (viewHeight / 2.0f);
 
-    clickOnScreen(x, y);
+    final View view = getView();
+    final int[] xy = new int[2];
+
+    try {
+      Thread.sleep(300);
+    } catch (InterruptedException e) {
+      // No-op
+    }
+    view.getLocationOnScreen(xy);
+    if (Build.VERSION.SDK_INT < 19 || xy[0] !=0 && xy[1] != 0) {
+      doClick();
+      return;
+    }
+
+    if (view.isLaidOut()) {
+      SelendroidLogger.debug("View is laid out, clicking immediately");
+      doClick();
+      return;
+    }
+
+    final AndroidWait wait = instrumentation.getAndroidWait();
+    final AtomicBoolean isLaidOut = new AtomicBoolean(false);
+    final ViewTreeObserver observer = view.getViewTreeObserver();
+    observer.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+      @Override
+      public void onGlobalLayout() {
+        try {
+          isLaidOut.set(true);
+        } finally {
+          if (observer.isAlive()) {
+            removeOnGlobalLayoutListener(observer, this);
+          } else {
+            removeOnGlobalLayoutListener(view.getViewTreeObserver(), this);
+          }
+        }
+      }
+    }); 
+    try {
+      wait.until(new Function<Void, Boolean>() {
+        @Override
+        public Boolean apply(Void input) {
+          return isLaidOut.get();
+        }
+      });
+    } catch (TimeoutException e) {
+      throw new SelendroidException("View was never laid out", e);
+    }
+
+    doClick();
+  }
+
+  private void doClick() {
+    final View view = getView();
+    final int[] xy = new int[2];
+
+    view.getLocationOnScreen(xy);
+    SelendroidLogger.debug("View reported coordinates: " + xy[0] + "," + xy[1]);
+    clickOnScreen(xy[0] + view.getWidth() / 2.0f, xy[1] + view.getHeight() / 2.0f);
+  }
+
+  private void removeOnGlobalLayoutListener(
+    ViewTreeObserver observer,
+    ViewTreeObserver.OnGlobalLayoutListener listener) {
+    if (observer == null || !observer.isAlive()) {
+      return;
+    }
+
+    if (Build.VERSION.SDK_INT < 16) {
+      observer.removeGlobalOnLayoutListener(listener);
+    } else {
+      observer.removeOnGlobalLayoutListener(listener);
+    }
   }
 
   private void clickOnScreen(float x, float y) {
-    final ServerInstrumentation inst = ServerInstrumentation.getInstance();
+    SelendroidLogger.debug(String.format("Clicking at position [%f, %f]", x, y));
+    final ServerInstrumentation inst = instrumentation;
     long downTime = SystemClock.uptimeMillis();
     long eventTime = SystemClock.uptimeMillis();
     final MotionEvent event =
@@ -209,8 +343,8 @@ public class AndroidNativeElement implements AndroidElement {
         MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP, x, y, 0);
 
     try {
-      inst.sendPointerSync(event);
-      inst.sendPointerSync(event2);
+      inst.getInstrumentation().sendPointerSync(event);
+      inst.getInstrumentation().sendPointerSync(event2);
       try {
         Thread.sleep(300);
       } catch (InterruptedException ignored) {}
@@ -290,7 +424,14 @@ public class AndroidNativeElement implements AndroidElement {
     object.put("type", getView().getClass().getSimpleName());
     String value = "";
     if (getView() instanceof TextView) {
-      value = String.valueOf(((TextView) getView()).getText());
+      TextView textView = (TextView) getView();
+      value = String.valueOf(textView.getText());
+
+      CharSequence error = textView.getError();
+      if(error != null && error.length() > 0){
+        SelendroidLogger.info("error: " + error);
+        object.put("error", error);
+      }
     }
     object.put("value", value);
     object.put("shown", getView().isShown());
@@ -368,7 +509,7 @@ public class AndroidNativeElement implements AndroidElement {
   @Override
   public void clear() {
     final View viewview = getView();
-    instrumentation.runOnMainSync(new Runnable() {
+    instrumentation.getInstrumentation().runOnMainSync(new Runnable() {
       @Override
       public void run() {
         viewview.requestFocus();
@@ -403,7 +544,7 @@ public class AndroidNativeElement implements AndroidElement {
 
   private class NativeElementSearchScope extends AbstractNativeElementContext {
     public NativeElementSearchScope(ServerInstrumentation instrumentation, KeySender keys,
-        KnownElements knownElements) {
+                                    KnownElements knownElements) {
       super(instrumentation, keys, knownElements);
     }
 
@@ -473,16 +614,23 @@ public class AndroidNativeElement implements AndroidElement {
             + "' was not found.");
       }
     }
-    try {
-      Object result = method.invoke(getView());
-      return String.valueOf(result);
-    } catch (IllegalArgumentException e) {
-      throw new SelendroidException(e);
-    } catch (IllegalAccessException e) {
-      throw new SelendroidException(e);
-    } catch (InvocationTargetException e) {
-      throw new SelendroidException(e);
+    final Object[] result = new Object[1];
+    final Exception[] exception = new Exception[1];
+    final Method m = method;
+    instrumentation.getInstrumentation().runOnMainSync(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          result[0] = m.invoke(getView());
+        } catch(Exception e) {
+          exception[0] = e;
+        }
+      }
+    });
+    if (exception.length == 1 && exception[0] != null) {
+      throw new SelendroidException(exception[0]);
     }
+    return String.valueOf(result[0]);
   }
 
   private String capitalizeFirstLetter(String name) {
@@ -520,7 +668,7 @@ public class AndroidNativeElement implements AndroidElement {
       sb.append(keys);
     }
     final String text = getText() + sb;
-    instrumentation.runOnMainSync(new Runnable() {
+    instrumentation.getInstrumentation().runOnMainSync(new Runnable() {
       @Override
       public void run() {
         ((EditText) viewview).setText(text);

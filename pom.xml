@@ -1,9 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.selendroid</groupId>
 	<artifactId>selendroid</artifactId>
-	<version>0.11.0-SNAPSHOT</version>
+	<version>0.18.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>selendroid</name>
 	<description>"Selenium for Android Apps" (Test automate native or hybrid Android apps with Selendroid.)</description>
@@ -21,7 +20,8 @@
 	<properties>
 		<platform.version>2.3.3</platform.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<selenium.version>2.42.2</selenium.version>
+		<selenium.version>2.48.0</selenium.version>
+		<apache-httpclient.version>4.3.4</apache-httpclient.version>
 	</properties>
 	<url>http://selendroid.io</url>
 
@@ -31,6 +31,11 @@
 				<groupId>org.seleniumhq.selenium</groupId>
 				<artifactId>selenium-java</artifactId>
 				<version>${selenium.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpclient</artifactId>
+				<version>${apache-httpclient.version}</version>
 			</dependency>
 			<!-- For the grid plugin -->
 			<dependency>
@@ -50,7 +55,8 @@
 		<connection>scm:git:git@github.com:selendroid/selendroid.git</connection>
 		<developerConnection>scm:git:git@github.com:selendroid/selendroid.git</developerConnection>
 		<url>http://github.com/selendroid/selendroid</url>
-	</scm>
+	  <tag>selendroid-0.16.0</tag>
+  </scm>
 
 	<distributionManagement>
 		<snapshotRepository>
@@ -96,9 +102,9 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
-					<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+					<groupId>com.simpligility.maven.plugins</groupId>
 					<artifactId>android-maven-plugin</artifactId>
-					<version>3.8.2</version>
+					<version>4.1.1</version>
 					<extensions>true</extensions>
 					<configuration>
 						<sdk>
@@ -109,7 +115,7 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>2.3.2</version>
+					<version>3.2</version>
 					<configuration>
 						<source>1.6</source>
 						<target>1.6</target>
